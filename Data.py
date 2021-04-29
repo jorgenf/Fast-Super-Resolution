@@ -1,24 +1,23 @@
 from PIL import Image
 import numpy as np
 import os
+import math
 
-
-def import_images(split, loc="images/"):
+def import_images(split, loc="images/FunieGanData/", LR=120, HR=240 ):
     X = []
     Y = []
     n = 0
     l = len([name for name in os.listdir(loc) if os.path.isfile(os.path.join(loc, name))])
     for filename in os.listdir(loc):
-        p = round((n/l)*100)
+        p = math.ceil((n/l)*100)
         print("\r" + "Importing images: " + str(p) + "%\t" + "#"*p, end="")
         img = Image.open(loc + filename)
+        w, h = img.size
         img = img.convert("L")
+        img = img.crop((0, 0, min(w, h), min(w, h)))
 
-        x = img.resize((160, 120), resample=Image.BICUBIC)
-        y = img.resize((320, 240), resample=Image.BICUBIC)
-
-        x = x.crop((0, 0, 120, 120))
-        y = y.crop((0, 0, 240, 240))
+        x = img.resize((LR, LR), resample=Image.BICUBIC)
+        y = img.resize((HR, HR), resample=Image.BICUBIC)
 
         x = np.asarray(x)
         y = np.asarray(y)
@@ -33,7 +32,7 @@ def import_images(split, loc="images/"):
     Y_train = np.asarray(Y[0: l - round(l * split)])
     X_test = np.asarray(X[l - round(l * split):])
     Y_test = np.asarray(Y[l - round(l * split):])
-    data = {"X_train" : X_train, "Y_train" : Y_train, "X_test" : X_test, "Y_test" : Y_test}
+    data = {"name": loc, "LR": LR, "HR": HR, "X_train" : X_train, "Y_train" : Y_train, "X_test" : X_test, "Y_test" : Y_test}
     return data
 
 def get_image(u):

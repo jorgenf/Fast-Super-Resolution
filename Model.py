@@ -7,6 +7,7 @@ from tensorflow.keras import layers
 import Data
 import datetime
 from PIL import Image
+import time
 
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -15,25 +16,41 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 
-def create_model():
+def create_model(dim, n, d, s, m):
     # Input layer. Takes the image shape and one channel for greyscale images.
-    inputs = keras.Input(shape=(120,120,1,))
+    inputs = keras.Input(shape=(dim,dim,1,))
 
     # The convolutional layers of the model. Keeps size of feature maps constant with same padding.
-    conv56_5 = layers.Conv2D(filters=56, kernel_size=(5,5), strides=(1,1), padding="same", activation=keras.activations.relu)
+
+    # Feature extraction
+    f_1 = 5
+    n_1 = d
+    conv56_5 = layers.Conv2D(filters=n_1, kernel_size=(f_1,f_1), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1) ,activation=keras.activations.relu)
     x = conv56_5(inputs)
 
-    conv12_1 = layers.Conv2D(filters=12, kernel_size=(1,1), strides=(1,1), padding="same", activation=keras.activations.relu)
+    # Shrinking
+    f_2 = 1
+    n_2 = s
+    conv12_1 = layers.Conv2D(filters=n_2, kernel_size=(f_2,f_2), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
     x = conv12_1(x)
 
-    conv12_3 = layers.Conv2D(filters=12, kernel_size=(3,3), strides=(1,1), padding="same", activation=keras.activations.relu)
-    x = conv12_3(x)
+    # Non-linear mapping
+    f_3 = 3
+    n_3 = s
+    for l in range(0,m):
+        conv56_1 = layers.Conv2D(filters=n_3, kernel_size=(f_3,f_3), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
+        x = conv56_1(x)
 
-    conv56_1 = layers.Conv2D(filters=56, kernel_size=(1,1), strides=(1,1), padding="same", activation=keras.activations.relu)
-    x = conv56_1(x)
+    # Expanding
+    f_4 = 1
+    n_4 = d
+    conv12_1 = layers.Conv2D(filters=n_4, kernel_size=(f_4,f_4), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
+    x = conv12_1(x)
 
-    # Deconvoluytion layer that scales up image.
-    deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(9,9), strides=(1,1), dilation_rate=(15,15), activation=keras.activations.relu)
+    # Deconvolution
+    f_5 = 9
+    n_5 = 1
+    deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
     outputs = deconv1_9(x)
 
     # Creates the model by assigning the input and output layer.
@@ -47,7 +64,7 @@ def create_model():
 
     return model
 
-def train_model(model, data, epochs):
+def train_model(model, data, epochs, batch_size):
     # Normalize data
 
     X_train = data["X_train"] / 255
@@ -56,7 +73,7 @@ def train_model(model, data, epochs):
     Y_test = data["Y_test"] / 255
 
     # Trains the model.
-    history = model.fit(X_train, Y_train, batch_size=64, epochs=epochs, validation_split=0.2)
+    history = model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, validation_split=0.2)
 
     # Evaluates model with test data.
     test_scores = model.evaluate(X_test, Y_test, verbose=2)
@@ -72,33 +89,90 @@ def train_model(model, data, epochs):
     os.mkdir(dir)
     model.save(dir + "/")
 
+    # Saves info about model
+    with open(dir + "/assets/summary.txt", 'w') as info:
+        info.write("Training dataset: " + data["name"] + "\tsize: " + str(len(data["X_train"]) + len(data["X_test"])) + "\n")
+        info.write("Epochs: " + str(epochs) + "\tBatch size: " + str(batch_size) + "\n")
+        model.summary(print_fn=lambda x: info.write(x + '\n'))
+        info.close()
+
+    os.mkdir(dir + "/assets/images")
+    dim = tf.shape(X_train)[-1]
+    img0, LR0, b0 = predict_model(model, "CH1_frames/charuco_36-18-0.jpg", dim=dim)
+    img0.save(dir + "/assets/images/charuco_36-18-0.jpg")
+    img1, LR1, b1 = predict_model(model, "CH1_frames/charuco_CH1_35-15-21.jpg", dim=dim)
+    img1.save(dir + "/assets/images/charuco_CH1_35-15-21.jpg")
+    img2, LR2, b2 = predict_model(model, "CH1_frames/charuco_CH1_35-15-30.jpg", dim=dim)
+    img2.save(dir + "/assets/images/charuco_CH1_35-15-30.jpg")
+    img3, LR3, b3 = predict_model(model, "CH1_frames/charuco_CH1_35-15-98.jpg", dim=dim)
+    img3.save(dir + "/assets/images/charuco_CH1_35-15-98.jpg")
+    img4, LR4, b4 = predict_model(model, "CH1_frames/charuco_CH1_35-15-4.jpg", dim=dim)
+    img4.save(dir + "/assets/images/charuco_CH1_35-15-4.jpg")
+    img5, LR5, b5 = predict_model(model, "FunieGanData/nm_0up.jpg", dim=dim)
+    img5.save(dir + "/assets/images/nm_0up.jpg")
+    img6, LR6, b6 = predict_model(model, "FunieGanData/nm_78up.jpg", dim=dim)
+    img6.save(dir + "/assets/images/nm_78up.jpg")
+    img7, LR7, b7 = predict_model(model, "FunieGanData/nm_76up.jpg", dim=dim)
+    img7.save(dir + "/assets/images/nm_76up.jpg")
+    img8, LR8, b8 = predict_model(model, "FunieGanData/nm_286up.jpg", dim=dim)
+    img8.save(dir + "/assets/images/nm_286up.jpg")
+    img9, LR9, b9 = predict_model(model, "FunieGanData/nm_255up.jpg", dim=dim)
+    img9.save(dir + "/assets/images/nm_255up.jpg")
+
+    return model
+
+
 def load_model(model_name):
     return keras.models.load_model("./saved_models/" + model_name)
 
-def predict_model(model, input):
 
-    img = Image.open("./images/" + input)
-    img = img.convert("L")
-    x = img.resize((160, 120), resample=Image.BICUBIC)
-    x = x.crop((0, 0, 120, 120))
+def predict_model(model, input, dim):
 
-    x = tf.keras.preprocessing.image.img_to_array(x)
-    print(tf.shape(x))
+    LR = Image.open("./images/" + input)
+    LR = LR.convert("L")
+    w, h = LR.size
+    LR = LR.crop((0, 0, min(w, h), min(w, h)))
+    LR = LR.resize((dim, dim), resample=Image.BICUBIC)
+
+
+    x = tf.keras.preprocessing.image.img_to_array(LR)
     x = x / 255
+    x = tf.reshape(x, (1, dim, dim,))
+    start = time.time()
+    y = model.predict(x)
+    stop = time.time()
+    print("Time:", stop-start)
+    y = tf.reshape(y, (dim*2, dim*2, 1)) * 255
+    HR = tf.keras.preprocessing.image.array_to_img(y)
+    bicubic = LR.resize((dim*2,dim*2), resample=Image.ANTIALIAS)
+    return HR, LR, bicubic
 
-    prediction = model.predict(x)
-    print(tf.shape(prediction))
-    img = tf.keras.preprocessing.image.array_to_img(prediction)
+def prelu(x, i):
+    return keras.activations.relu()
 
-    return img
 
-data = Data.import_images(split = 0.1)
-model = create_model()
-train_model(model, data, 5000)
+n = 2
+d = 56
+s = 12
+m = 0
+dim = 360
+data = Data.import_images(loc="images/CH1_frames/",split = 0.1, LR=dim, HR=dim*2)
 
-#model = load_model("13-1_27-4")
-#print(model.summary())
-#prediction = predict_model(model, "nm_0up.jpg")
+model = create_model(dim, n, d, s, m)
+model = train_model(model, data, epochs=2000, batch_size=32)
 
-#print(prediction)
-#prediction.show()
+
+'''
+model = load_model("1-24_29-4")
+print(model.summary())
+HR, LR, bicubic = predict_model(model, "CH1_frames/charuco_36-18-0.jpg", 120)
+
+HR.show()
+LR.show()
+bicubic.show()
+'''
+
+
+
+
+
