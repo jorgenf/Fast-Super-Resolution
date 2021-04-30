@@ -38,5 +38,3 @@ def import_images(split, loc="images/FunieGanData/", LR=120, HR=240 ):
 def get_image(u):
     u = Image.fromarray(u)
     Image._show(u)
-
-#import_images(0.1)

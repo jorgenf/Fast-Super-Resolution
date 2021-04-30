@@ -64,7 +64,7 @@ def create_model(dim, n, d, s, m):
 
     return model
 
-def train_model(model, data, epochs, batch_size):
+def train_model(model, data, epochs, batch_size, working_dir):
     # Normalize data
 
     X_train = data["X_train"] / 255
@@ -93,7 +93,7 @@ def train_model(model, data, epochs, batch_size):
     dth = str(datetime.datetime.now().hour)
     dtd = str(datetime.datetime.now().day)
     dtm = str(datetime.datetime.now().month)
-    dir = "./saved_models/" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
+    dir = working_dir + "/saved_models/" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
     os.mkdir(dir)
     model.save(dir + "/")
 
@@ -106,42 +106,41 @@ def train_model(model, data, epochs, batch_size):
 
     os.mkdir(dir + "/assets/images")
     dim = tf.shape(X_train)[-1]
-    img0, LR0, b0 = predict_model(model, "CH1_frames/charuco_36-18-0.jpg", dim=dim)
+    img0, LR0, b0 = predict_model(model, working_dir + "/images/CH1_frames/charuco_36-18-0.jpg", dim=dim)
     img0.save(dir + "/assets/images/charuco_36-18-0.jpg")
-    img1, LR1, b1 = predict_model(model, "CH1_frames/charuco_CH1_35-15-21.jpg", dim=dim)
+    img1, LR1, b1 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-21.jpg", dim=dim)
     img1.save(dir + "/assets/images/charuco_CH1_35-15-21.jpg")
-    img2, LR2, b2 = predict_model(model, "CH1_frames/charuco_CH1_35-15-30.jpg", dim=dim)
+    img2, LR2, b2 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-30.jpg", dim=dim)
     img2.save(dir + "/assets/images/charuco_CH1_35-15-30.jpg")
-    img3, LR3, b3 = predict_model(model, "CH1_frames/charuco_CH1_35-15-98.jpg", dim=dim)
+    img3, LR3, b3 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-98.jpg", dim=dim)
     img3.save(dir + "/assets/images/charuco_CH1_35-15-98.jpg")
-    img4, LR4, b4 = predict_model(model, "CH1_frames/charuco_CH1_35-15-4.jpg", dim=dim)
+    img4, LR4, b4 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-4.jpg", dim=dim)
     img4.save(dir + "/assets/images/charuco_CH1_35-15-4.jpg")
-    img5, LR5, b5 = predict_model(model, "FunieGanData/nm_0up.jpg", dim=dim)
+    img5, LR5, b5 = predict_model(model, working_dir + "/images/FunieGanData/nm_0up.jpg", dim=dim)
     img5.save(dir + "/assets/images/nm_0up.jpg")
-    img6, LR6, b6 = predict_model(model, "FunieGanData/nm_78up.jpg", dim=dim)
+    img6, LR6, b6 = predict_model(model, working_dir + "/images/FunieGanData/nm_78up.jpg", dim=dim)
     img6.save(dir + "/assets/images/nm_78up.jpg")
-    img7, LR7, b7 = predict_model(model, "FunieGanData/nm_76up.jpg", dim=dim)
+    img7, LR7, b7 = predict_model(model, working_dir + "/images/FunieGanData/nm_76up.jpg", dim=dim)
     img7.save(dir + "/assets/images/nm_76up.jpg")
-    img8, LR8, b8 = predict_model(model, "FunieGanData/nm_286up.jpg", dim=dim)
+    img8, LR8, b8 = predict_model(model, working_dir + "/images/FunieGanData/nm_286up.jpg", dim=dim)
     img8.save(dir + "/assets/images/nm_286up.jpg")
-    img9, LR9, b9 = predict_model(model, "FunieGanData/nm_255up.jpg", dim=dim)
+    img9, LR9, b9 = predict_model(model, working_dir + "/images/FunieGanData/nm_255up.jpg", dim=dim)
     img9.save(dir + "/assets/images/nm_255up.jpg")
 
     return model
 
 
-def load_model(model_name):
-    return keras.models.load_model("./saved_models/" + model_name)
+def load_model(dir):
+    return keras.models.load_model(dir)
 
 
-def predict_model(model, input, dim):
+def predict_model(model, image_dir, dim):
 
-    LR = Image.open("./images/" + input)
+    LR = Image.open(image_dir)
     LR = LR.convert("L")
     w, h = LR.size
     LR = LR.crop((0, 0, min(w, h), min(w, h)))
     LR = LR.resize((dim, dim), resample=Image.BICUBIC)
-
 
     x = tf.keras.preprocessing.image.img_to_array(LR)
     x = x / 255
@@ -149,7 +148,7 @@ def predict_model(model, input, dim):
     start = time.time()
     y = model.predict(x)
     stop = time.time()
-    print("Time:", stop-start)
+    print("Elapsed time: " + str(stop-start))
     y = tf.reshape(y, (dim*2, dim*2, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
     bicubic = LR.resize((dim*2,dim*2), resample=Image.ANTIALIAS)
@@ -158,29 +157,13 @@ def predict_model(model, input, dim):
 def prelu(x, i):
     return keras.activations.relu()
 
-'''
-n = 2
-d = 56
-s = 12
-m = 0
-dim = 120
-data = Data.import_images(loc="images/FunieGanData/",split = 0.1, LR=dim, HR=dim*2)
-
-model = create_model(dim, n, d, s, m)
-model = train_model(model, data, epochs=10000, batch_size=128)
 
 
-'''
-model = load_model("3-35_30-4")
-print(model.summary())
-HR, LR, bicubic = predict_model(model, "CH1_frames/charuco_CH1_35-15-98.jpg", 120)
+model = create_model(dim=120, n=2, d=56, s=12, m=0)
+data = Data.import_images(0.1, loc="./images/FunieGanData/")
+trained_model = train_model(model, data, 2, 64, working_dir=".")
 
-HR.show()
-LR.show()
-bicubic.show()
-
-
-
-
-
+#model = load_model("./saved_models/best")
+#HR, LR, b = predict_model(model, "./images/CH1_frames/charuco_36-18-0.jpg", 120)
+#HR.show()
 
