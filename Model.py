@@ -159,11 +159,5 @@ def prelu(x, i):
 
 
 
-model = create_model(dim=120, n=2, d=56, s=12, m=0)
-data = Data.import_images(0.1, loc="./images/FunieGanData/")
-trained_model = train_model(model, data, 2, 64, working_dir=".")
 
-#model = load_model("./saved_models/best")
-#HR, LR, b = predict_model(model, "./images/CH1_frames/charuco_36-18-0.jpg", 120)
-#HR.show()
 
