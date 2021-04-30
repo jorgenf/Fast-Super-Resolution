@@ -73,7 +73,15 @@ def train_model(model, data, epochs, batch_size):
     Y_test = data["Y_test"] / 255
 
     # Trains the model.
-    history = model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, validation_split=0.2)
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    history = model.fit(
+        X_train, 
+        Y_train, 
+        batch_size=batch_size, 
+        epochs=epochs, 
+        validation_split=0.2,
+        callbacks=[tensorboard_callback])
 
     # Evaluates model with test data.
     test_scores = model.evaluate(X_test, Y_test, verbose=2)
