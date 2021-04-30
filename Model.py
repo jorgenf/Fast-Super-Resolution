@@ -9,12 +9,13 @@ import datetime
 from PIL import Image
 import time
 
+'''
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 # Enable/disable GPU
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-
+'''
 
 def create_model(dim, n, d, s, m):
     # Input layer. Takes the image shape and one channel for greyscale images.
