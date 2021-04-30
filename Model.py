@@ -150,27 +150,27 @@ def predict_model(model, input, dim):
 def prelu(x, i):
     return keras.activations.relu()
 
-
+'''
 n = 2
 d = 56
 s = 12
 m = 0
-dim = 360
-data = Data.import_images(loc="images/CH1_frames/",split = 0.1, LR=dim, HR=dim*2)
+dim = 120
+data = Data.import_images(loc="images/FunieGanData/",split = 0.1, LR=dim, HR=dim*2)
 
 model = create_model(dim, n, d, s, m)
-model = train_model(model, data, epochs=2000, batch_size=32)
+model = train_model(model, data, epochs=10000, batch_size=128)
 
 
 '''
-model = load_model("1-24_29-4")
+model = load_model("3-35_30-4")
 print(model.summary())
-HR, LR, bicubic = predict_model(model, "CH1_frames/charuco_36-18-0.jpg", 120)
+HR, LR, bicubic = predict_model(model, "CH1_frames/charuco_CH1_35-15-98.jpg", 120)
 
 HR.show()
 LR.show()
 bicubic.show()
-'''
+
 
 
 
