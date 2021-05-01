@@ -13,7 +13,7 @@ Opens a folder, finds all .jpg's and counts the number of ArUco tags detected
 start_t = time.time()
 
 # settings
-INPUT_FRAMES_FOLDER = "images/CH1_frames"
+INPUT_FRAMES_FOLDER = "evaluation_images/isolated_tags/charuco_36-18_250"
 DISPLAY_FRAMES = True # False if there are more than 10 frames in folder
 ARUCO_DICT = aruco.DICT_6X6_250 
 
@@ -61,6 +61,6 @@ cv2.destroyAllWindows()
 
 if len(frame_paths) > 0:
     print(f"Frames read: {frame_count}")
-    print(f"Tags detected total: {tags_found} / {frame_count * 17}")
+    # print(f"Tags detected total: {tags_found} / {frame_count * 17}")
     print(f"Tags detected per frame: {tags_found / frame_count:.3f}")
     print(f"Completed in {time.time() - start_t :.2f} s")
