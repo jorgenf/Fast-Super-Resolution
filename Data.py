@@ -3,7 +3,7 @@ import numpy as np
 import os
 import math
 
-def import_images(split, loc="images/FunieGanData/", LR=120, HR=240 ):
+def import_images(split, loc="images/funiegan/", LR=120, HR=240 ):
     X = []
     Y = []
     n = 0
