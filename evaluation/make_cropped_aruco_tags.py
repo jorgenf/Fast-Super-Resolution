@@ -1,4 +1,6 @@
 import os
+import glob
+from PIL import Image
 
 import cv2
 from cv2 import aruco as aruco
@@ -14,11 +16,13 @@ Output is images of spesified size
 """
 
 # settings
-INPUT_VIDEO = r"/home/hakon/code/GAN_pipeline/vids/charuco_36-18.mp4"
+INPUT_VIDEO = r"/home/hakon/code/GAN_pipeline/vids/charuco_short.mp4"
+# INPUT_VIDEO = r"/home/hakon/Downloads/charuco_CH1_35-15.mp4"
 OUTPUT_FRAMES = r"evaluation_images/isolated_tags" # save frame if any tag is detected
 SAVE_FRAME_EVERY_N_SECONDS = 3 # decimals for multiple saves per second
-OUTPUT_HEIGHT = 500 # pixels (aspect ratio maintained unless crop is True)
+OUTPUT_HEIGHT = 150 # size of output image, None to use natural size
 TAG_PADDING = .5 # percentage size of tag added as padding
+ASPECT_RATIO_DEVIATION = 0.6 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 
 
 
@@ -32,7 +36,12 @@ font = cv2.FONT_HERSHEY_PLAIN
 input_file_name = os.path.splitext(os.path.basename(INPUT_VIDEO))[0]
 
 # create a output folder
-folder_name = f"{OUTPUT_FRAMES}/{input_file_name}_{OUTPUT_HEIGHT}"
+if OUTPUT_HEIGHT:
+    size_str = OUTPUT_HEIGHT
+else:
+    size_str = "x"
+
+folder_name = f"{OUTPUT_FRAMES}/{input_file_name}_{size_str}"
 try:  
     # creating a folder 
     if not os.path.exists(folder_name): 
@@ -54,6 +63,8 @@ skip = int(SAVE_FRAME_EVERY_N_SECONDS * fps)
 # metrics
 tags_found = 0
 frame_count = 0
+n_saved = 0
+saved_aspect_ratios = []
 
 # main loop
 while(True):
@@ -111,33 +122,55 @@ while(True):
                 # crop image
                 tag_im = frame[x1:x2, y1:y2]
 
-                # crops image if the tag is smaller than specified output size
-                if tag_im.shape[0] > OUTPUT_HEIGHT:
-                    center = tuple(x / 2 for x in tag_im.shape)
-                    x = center[1] - OUTPUT_HEIGHT / 2
-                    y = center[0] - OUTPUT_HEIGHT / 2
-                    tag_im = tag_im[int(y):int(y + OUTPUT_HEIGHT), int(x):int(x + OUTPUT_HEIGHT )]
+                # discard if aspect ratio is crazy
+                aspect_ratio = tag_im.shape[1] / tag_im.shape[0]
+                if (aspect_ratio < (1 * ASPECT_RATIO_DEVIATION)) or (aspect_ratio > (1 * (1 / ASPECT_RATIO_DEVIATION))):
+                    continue
+                saved_aspect_ratios.append(aspect_ratio)
 
-                # add padding if cropped image is smaller than desired output image size
-                if tag_im.shape[0] < OUTPUT_HEIGHT:
-        
-                    # calculate and add necessary padding
-                    top_pad = round((OUTPUT_HEIGHT - tag_im.shape[0]) / 2)
-                    bottom_pad = OUTPUT_HEIGHT - (top_pad + tag_im.shape[0])
-                    left_pad = round((OUTPUT_HEIGHT - tag_im.shape[1]) / 2)
-                    right_pad = OUTPUT_HEIGHT - (left_pad + tag_im.shape[1])
+                if OUTPUT_HEIGHT is not None:
+
+                    # crops image if the tag is smaller than specified output size
+                    if tag_im.shape[0] > OUTPUT_HEIGHT:
+                        center = tuple(x / 2 for x in tag_im.shape)
+                        x = center[1] - OUTPUT_HEIGHT / 2
+                        y = center[0] - OUTPUT_HEIGHT / 2
+                        tag_im = tag_im[int(y):int(y + OUTPUT_HEIGHT), int(x):int(x + OUTPUT_HEIGHT )]
+
+                    # add vertical padding if cropped image is smaller than desired output image size
+                    if tag_im.shape[0] < OUTPUT_HEIGHT:
+            
+                        # calculate and add necessary padding
+                        top_pad = round((OUTPUT_HEIGHT - tag_im.shape[0]) / 2)
+                        bottom_pad = OUTPUT_HEIGHT - (top_pad + tag_im.shape[0])
+                        
+                        tag_im = cv2.copyMakeBorder(
+                            tag_im, 
+                            top_pad,
+                            bottom_pad,
+                            0,
+                            0,
+                            cv2.BORDER_CONSTANT)
+
+                    # add padding if cropped image is smaller than desired output image size
+                    if tag_im.shape[1] < OUTPUT_HEIGHT:
+            
+                        # calculate and add necessary padding
+                        left_pad = round((OUTPUT_HEIGHT - tag_im.shape[1]) / 2)
+                        right_pad = OUTPUT_HEIGHT - (left_pad + tag_im.shape[1])
+                        
+                        tag_im = cv2.copyMakeBorder(
+                            tag_im, 
+                            0,
+                            0,
+                            left_pad,
+                            right_pad,
+                            cv2.BORDER_CONSTANT)
                     
-                    tag_im = cv2.copyMakeBorder(
-                        tag_im, 
-                        top_pad,
-                        bottom_pad,
-                        left_pad,
-                        right_pad,
-                        cv2.BORDER_CONSTANT)
-                    
-                # save image
-                name = f"{OUTPUT_FRAMES}/{input_file_name}_{OUTPUT_HEIGHT}/{round(frame_count // fps)}-{round(frame_count % fps)}_{ids[i][0]}.jpg"
+                # save image                
+                name = f"{OUTPUT_FRAMES}/{input_file_name}_{size_str}/{round(frame_count // fps)}-{round(frame_count % fps)}_{ids[i][0]}.jpg"
                 cv2.imwrite(name, tag_im)
+                n_saved += 1
                 # print(f"Created {name} of size {tag_im.shape[0]}x{tag_im.shape[1]}")
 
                 # draw rectangle and ID on frame
@@ -164,6 +197,21 @@ while(True):
 cap.release()
 cv2.destroyAllWindows()
 
-print(f"Input size {width}x{height} @ {fps}FPS")
+print(f"Input video size {width}x{height} @ {fps}FPS")
 print(f"Tags detected total: {tags_found}")
 print(f"Tags detected per frame: {tags_found / frame_count:.3f}")
+print(f"{n_saved} files written to \"{folder_name}\"")
+
+# prints report on output image size
+if OUTPUT_HEIGHT is None:
+    frame_paths = glob.glob(folder_name + "/*.jp*g")
+    if len(frame_paths) == 0:
+        print(f"No .jpg/.jpeg files in {folder_name}")
+
+    sizes = [Image.open(f, 'r').size for f in frame_paths]
+    print(f"Largest output image is {max(sizes)} and smallest is {min(sizes)}")
+else:
+    print(f"Output image size is {OUTPUT_HEIGHT}x{OUTPUT_HEIGHT}")
+
+# reprort on AR
+print(f"Aspect ratio vary from {min(saved_aspect_ratios):.2f} to {max(saved_aspect_ratios):.2f}")
