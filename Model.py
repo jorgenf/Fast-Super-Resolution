@@ -94,7 +94,7 @@ def train_model(model, data, epochs, batch_size, working_dir):
     dth = str(datetime.datetime.now().hour)
     dtd = str(datetime.datetime.now().day)
     dtm = str(datetime.datetime.now().month)
-    dir = working_dir + "/saved_models/" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
+    dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
     os.mkdir(dir)
     model.save(dir + "/")
 
@@ -157,8 +157,4 @@ def predict_model(model, image_dir, dim):
 
 def prelu(x, i):
     return keras.activations.relu()
-
-
-
-
-
+    
