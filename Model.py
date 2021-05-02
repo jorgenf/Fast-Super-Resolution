@@ -176,4 +176,5 @@ if __name__ == "__main__":
     data = Data.import_images(loc="training_images/" + dataset + "/",split = 0.1, LR=dim, HR=dim*2)
 
     model = create_model(dim, n, d, s, m)
-    model = train_model(model, data, epochs=10, batch_size=32, model_alias="test")git
+    model = train_model(model, data, epochs=10, batch_size=32,)
+    
