@@ -75,6 +75,9 @@ def train_model(model, data, epochs, batch_size, save_path="saved_models", model
     X_test = data["X_test"] / 255
     Y_test = data["Y_test"] / 255
 
+    # infer image dimensions by size of array
+    dim = X_train[0].shape[0]
+
     # Trains the model.
     log_dir = "logs/fit/" + model_alias
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -170,11 +173,10 @@ if __name__ == "__main__":
     d = 56
     s = 12
     m = 0
-    dim = 200
+    dim = 100
     # dataset = "FunieGanData"
     dataset = "CH1_frames"
     data = Data.import_images(loc="training_images/" + dataset + "/",split = 0.1, LR=dim, HR=dim*2)
 
     model = create_model(dim, n, d, s, m)
-    model = train_model(model, data, epochs=10, batch_size=32,)
-    
+    model = train_model(model, data, epochs=10, batch_size=32, model_alias="tester")
