@@ -65,7 +65,7 @@ def create_model(dim, n, d, s, m):
 
     return model
 
-def train_model(model, data, epochs, batch_size, working_dir="", model_alias=None):
+def train_model(model, data, epochs, batch_size, save_path="saved_models", model_alias=None):
     if model_alias is None:
         model_alias = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -97,7 +97,7 @@ def train_model(model, data, epochs, batch_size, working_dir="", model_alias=Non
     # dtd = str(datetime.datetime.now().day)
     # dtm = str(datetime.datetime.now().month)
     # dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
-    dir = f"{working_dir}saved_models/{dim}_{model_alias}"
+    dir = f"{save_path}/{dim}_{model_alias}"
     try:
         os.mkdir(dir)
     except:
