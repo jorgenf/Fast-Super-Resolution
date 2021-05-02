@@ -171,8 +171,9 @@ if __name__ == "__main__":
     s = 12
     m = 0
     dim = 200
-    dataset = "FunieGanData"
-    data = Data.import_images(loc="images/" + dataset + "/",split = 0.1, LR=dim, HR=dim*2)
+    # dataset = "FunieGanData"
+    dataset = "CH1_frames"
+    data = Data.import_images(loc="training_images/" + dataset + "/",split = 0.1, LR=dim, HR=dim*2)
 
     model = create_model(dim, n, d, s, m)
-    model = train_model(model, data, epochs=10, batch_size=32, working_dir="", dim=dim)
+    model = train_model(model, data, epochs=10, batch_size=32, model_alias="test")git
