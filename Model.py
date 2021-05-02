@@ -97,7 +97,7 @@ def train_model(model, data, epochs, batch_size, working_dir="", model_alias=Non
     # dtd = str(datetime.datetime.now().day)
     # dtm = str(datetime.datetime.now().month)
     # dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
-    dir = f"{}saved_models/{dim}_{model_alias}"
+    dir = f"{working_dir}saved_models/{dim}_{model_alias}"
     try:
         os.mkdir(dir)
     except:
