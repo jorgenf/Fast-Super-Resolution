@@ -65,7 +65,7 @@ def create_model(dim, n, d, s, m):
 
     return model
 
-def train_model(model, data, epochs, batch_size, working_dir):
+def train_model(model, data, epochs, batch_size, working_dir, dim="x"):
     # Normalize data
 
     X_train = data["X_train"] / 255
@@ -94,7 +94,8 @@ def train_model(model, data, epochs, batch_size, working_dir):
     dth = str(datetime.datetime.now().hour)
     dtd = str(datetime.datetime.now().day)
     dtm = str(datetime.datetime.now().month)
-    dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
+    # dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
+    dir = f"saved_models/{dim}_{dth}-{dtmin}_{dtd}-{dtm}"
     os.mkdir(dir)
     model.save(dir + "/")
 
@@ -105,28 +106,28 @@ def train_model(model, data, epochs, batch_size, working_dir):
         model.summary(print_fn=lambda x: info.write(x + '\n'))
         info.close()
 
-    os.mkdir(dir + "/assets/images")
-    dim = tf.shape(X_train)[-1]
-    img0, LR0, b0 = predict_model(model, working_dir + "/images/CH1_frames/charuco_36-18-0.jpg", dim=dim)
-    img0.save(dir + "/assets/images/charuco_36-18-0.jpg")
-    img1, LR1, b1 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-21.jpg", dim=dim)
-    img1.save(dir + "/assets/images/charuco_CH1_35-15-21.jpg")
-    img2, LR2, b2 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-30.jpg", dim=dim)
-    img2.save(dir + "/assets/images/charuco_CH1_35-15-30.jpg")
-    img3, LR3, b3 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-98.jpg", dim=dim)
-    img3.save(dir + "/assets/images/charuco_CH1_35-15-98.jpg")
-    img4, LR4, b4 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-4.jpg", dim=dim)
-    img4.save(dir + "/assets/images/charuco_CH1_35-15-4.jpg")
-    img5, LR5, b5 = predict_model(model, working_dir + "/images/FunieGanData/nm_0up.jpg", dim=dim)
-    img5.save(dir + "/assets/images/nm_0up.jpg")
-    img6, LR6, b6 = predict_model(model, working_dir + "/images/FunieGanData/nm_78up.jpg", dim=dim)
-    img6.save(dir + "/assets/images/nm_78up.jpg")
-    img7, LR7, b7 = predict_model(model, working_dir + "/images/FunieGanData/nm_76up.jpg", dim=dim)
-    img7.save(dir + "/assets/images/nm_76up.jpg")
-    img8, LR8, b8 = predict_model(model, working_dir + "/images/FunieGanData/nm_286up.jpg", dim=dim)
-    img8.save(dir + "/assets/images/nm_286up.jpg")
-    img9, LR9, b9 = predict_model(model, working_dir + "/images/FunieGanData/nm_255up.jpg", dim=dim)
-    img9.save(dir + "/assets/images/nm_255up.jpg")
+    # os.mkdir(dir + "/assets/images")
+    # dim = tf.shape(X_train)[-1]
+    # img0, LR0, b0 = predict_model(model, working_dir + "/images/CH1_frames/charuco_36-18-0.jpg", dim=dim)
+    # img0.save(dir + "/assets/images/charuco_36-18-0.jpg")
+    # img1, LR1, b1 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-21.jpg", dim=dim)
+    # img1.save(dir + "/assets/images/charuco_CH1_35-15-21.jpg")
+    # img2, LR2, b2 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-30.jpg", dim=dim)
+    # img2.save(dir + "/assets/images/charuco_CH1_35-15-30.jpg")
+    # img3, LR3, b3 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-98.jpg", dim=dim)
+    # img3.save(dir + "/assets/images/charuco_CH1_35-15-98.jpg")
+    # img4, LR4, b4 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-4.jpg", dim=dim)
+    # img4.save(dir + "/assets/images/charuco_CH1_35-15-4.jpg")
+    # img5, LR5, b5 = predict_model(model, working_dir + "/images/FunieGanData/nm_0up.jpg", dim=dim)
+    # img5.save(dir + "/assets/images/nm_0up.jpg")
+    # img6, LR6, b6 = predict_model(model, working_dir + "/images/FunieGanData/nm_78up.jpg", dim=dim)
+    # img6.save(dir + "/assets/images/nm_78up.jpg")
+    # img7, LR7, b7 = predict_model(model, working_dir + "/images/FunieGanData/nm_76up.jpg", dim=dim)
+    # img7.save(dir + "/assets/images/nm_76up.jpg")
+    # img8, LR8, b8 = predict_model(model, working_dir + "/images/FunieGanData/nm_286up.jpg", dim=dim)
+    # img8.save(dir + "/assets/images/nm_286up.jpg")
+    # img9, LR9, b9 = predict_model(model, working_dir + "/images/FunieGanData/nm_255up.jpg", dim=dim)
+    # img9.save(dir + "/assets/images/nm_255up.jpg")
 
     return model
 
@@ -157,4 +158,16 @@ def predict_model(model, image_dir, dim):
 
 def prelu(x, i):
     return keras.activations.relu()
-    
+
+
+if __name__ == "__main__":
+    n = 2
+    d = 56
+    s = 12
+    m = 0
+    dim = 150
+    dataset = "CH1_frames"
+    data = Data.import_images(loc="images/" + dataset + "/",split = 0.1, LR=dim, HR=dim*2)
+
+    model = create_model(dim, n, d, s, m)
+    model = train_model(model, data, epochs=10, batch_size=32, working_dir="", dim=dim)
