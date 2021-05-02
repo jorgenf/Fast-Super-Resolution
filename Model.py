@@ -17,7 +17,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 '''
 
-def create_model(dim, n, d, s, m):
+def create_model(z, n, d, s, m):
     # Input layer. Takes the image shape and one channel for greyscale images.
     inputs = keras.Input(shape=(dim,dim,1,))
 
@@ -65,16 +65,18 @@ def create_model(dim, n, d, s, m):
 
     return model
 
-def train_model(model, data, epochs, batch_size, working_dir, dim="x"):
-    # Normalize data
+def train_model(model, data, epochs, batch_size, working_dir, dim="x", timestamp=None):
+    if timestamp is None:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
+    # Normalize data
     X_train = data["X_train"] / 255
     Y_train = data["Y_train"] / 255
     X_test = data["X_test"] / 255
     Y_test = data["Y_test"] / 255
 
     # Trains the model.
-    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = "logs/fit/" + timestamp
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     history = model.fit(
         X_train, 
@@ -90,13 +92,16 @@ def train_model(model, data, epochs, batch_size, working_dir, dim="x"):
     print("Test accuracy:", test_scores[1])
 
     # Saved model in separate directory
-    dtmin = str(datetime.datetime.now().minute)
-    dth = str(datetime.datetime.now().hour)
-    dtd = str(datetime.datetime.now().day)
-    dtm = str(datetime.datetime.now().month)
+    # dtmin = str(datetime.datetime.now().minute)
+    # dth = str(datetime.datetime.now().hour)
+    # dtd = str(datetime.datetime.now().day)
+    # dtm = str(datetime.datetime.now().month)
     # dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
-    dir = f"saved_models/{dim}_{dth}-{dtmin}_{dtd}-{dtm}"
-    os.mkdir(dir)
+    dir = f"saved_models/{dim}_{timestamp}"
+    try:
+        os.mkdir(dir)
+    except:
+        print(f"Failed to create directory \"{dir}\"")
     model.save(dir + "/")
 
     # Saves info about model
@@ -165,8 +170,8 @@ if __name__ == "__main__":
     d = 56
     s = 12
     m = 0
-    dim = 150
-    dataset = "CH1_frames"
+    dim = 200
+    dataset = "FunieGanData"
     data = Data.import_images(loc="images/" + dataset + "/",split = 0.1, LR=dim, HR=dim*2)
 
     model = create_model(dim, n, d, s, m)
