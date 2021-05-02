@@ -17,7 +17,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 '''
 
-def create_model(z, n, d, s, m):
+def create_model(dim, n, d, s, m):
     # Input layer. Takes the image shape and one channel for greyscale images.
     inputs = keras.Input(shape=(dim,dim,1,))
 
@@ -65,9 +65,9 @@ def create_model(z, n, d, s, m):
 
     return model
 
-def train_model(model, data, epochs, batch_size, working_dir, dim="x", timestamp=None):
-    if timestamp is None:
-        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+def train_model(model, data, epochs, batch_size, working_dir="", model_alias=None):
+    if model_alias is None:
+        model_alias = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     # Normalize data
     X_train = data["X_train"] / 255
@@ -76,7 +76,7 @@ def train_model(model, data, epochs, batch_size, working_dir, dim="x", timestamp
     Y_test = data["Y_test"] / 255
 
     # Trains the model.
-    log_dir = "logs/fit/" + timestamp
+    log_dir = "logs/fit/" + model_alias
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     history = model.fit(
         X_train, 
@@ -97,7 +97,7 @@ def train_model(model, data, epochs, batch_size, working_dir, dim="x", timestamp
     # dtd = str(datetime.datetime.now().day)
     # dtm = str(datetime.datetime.now().month)
     # dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
-    dir = f"saved_models/{dim}_{timestamp}"
+    dir = f"{}saved_models/{dim}_{model_alias}"
     try:
         os.mkdir(dir)
     except:
@@ -141,24 +141,24 @@ def load_model(dir):
     return keras.models.load_model(dir)
 
 
-def predict_model(model, image_dir, dim):
+def predict_model(model, image_dir, input_dim, magnification=2):
 
     LR = Image.open(image_dir)
     LR = LR.convert("L")
     w, h = LR.size
     LR = LR.crop((0, 0, min(w, h), min(w, h)))
-    LR = LR.resize((dim, dim), resample=Image.BICUBIC)
+    LR = LR.resize((input_dim, input_dim), resample=Image.BICUBIC)
 
     x = tf.keras.preprocessing.image.img_to_array(LR)
     x = x / 255
-    x = tf.reshape(x, (1, dim, dim,))
+    x = tf.reshape(x, (1, input_dim, input_dim,))
     start = time.time()
     y = model.predict(x)
     stop = time.time()
     print("Elapsed time: " + str(stop-start))
-    y = tf.reshape(y, (dim*2, dim*2, 1)) * 255
+    y = tf.reshape(y, (input_dim*magnification, input_dim*magnification, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
-    bicubic = LR.resize((dim*2,dim*2), resample=Image.ANTIALIAS)
+    bicubic = LR.resize((input_dim*magnification,input_dim*magnification), resample=Image.ANTIALIAS)
     return HR, LR, bicubic
 
 def prelu(x, i):
