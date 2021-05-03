@@ -12,7 +12,7 @@ start_t = time.time()
 
 # settings 
 INPUT_VIDEO_PATH = "/home/hakon/Downloads/charuco_CH1_35-15.mp4"
-OUTPUT_PATH = "images/CH1_frames"
+OUTPUT_PATH = "images/charuco"
 SAVED_FRAMES_PER_SECOND = 1
 
 # if output frames should be resized
