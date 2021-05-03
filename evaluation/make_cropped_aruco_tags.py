@@ -16,12 +16,13 @@ Output is images of spesified size
 """
 
 # settings
-INPUT_VIDEO = r"/home/hakon/code/GAN_pipeline/vids/charuco_short.mp4"
-# INPUT_VIDEO = r"/home/hakon/Downloads/charuco_CH1_35-15.mp4"
+# INPUT_VIDEO = r"/home/hakon/code/GAN_pipeline/vids/charuco_short.mp4"
+INPUT_VIDEO = r"/home/hakon/Downloads/charuco_CH1_35-15.mp4"
 OUTPUT_FRAMES = r"evaluation_images/isolated_tags" # save frame if any tag is detected
-SAVE_FRAME_EVERY_N_SECONDS = 3 # decimals for multiple saves per second
-OUTPUT_HEIGHT = 150 # size of output image, None to use natural size
-TAG_PADDING = .5 # percentage size of tag added as padding
+SAVE_FRAME_EVERY_N_SECONDS = 2 # decimals for multiple saves per second
+OUTPUT_HEIGHT = 200 # size of output image, None to use natural size
+IMAGE_FORMAT = "png"
+TAG_PADDING = .4 # percentage size of tag added as padding
 ASPECT_RATIO_DEVIATION = 0.6 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 
 
@@ -41,7 +42,7 @@ if OUTPUT_HEIGHT:
 else:
     size_str = "x"
 
-folder_name = f"{OUTPUT_FRAMES}/{input_file_name}_{size_str}"
+folder_name = f"{OUTPUT_FRAMES}/{input_file_name}_{size_str}_{IMAGE_FORMAT}"
 try:  
     # creating a folder 
     if not os.path.exists(folder_name): 
@@ -152,7 +153,7 @@ while(True):
                             0,
                             cv2.BORDER_CONSTANT)
 
-                    # add padding if cropped image is smaller than desired output image size
+                    # add horizontal padding if cropped image is smaller than desired output image size
                     if tag_im.shape[1] < OUTPUT_HEIGHT:
             
                         # calculate and add necessary padding
@@ -168,7 +169,7 @@ while(True):
                             cv2.BORDER_CONSTANT)
                     
                 # save image                
-                name = f"{OUTPUT_FRAMES}/{input_file_name}_{size_str}/{round(frame_count // fps)}-{round(frame_count % fps)}_{ids[i][0]}.jpg"
+                name = f"{folder_name}/{round(frame_count // fps)}-{round(frame_count % fps)}_{ids[i][0]}.{IMAGE_FORMAT}"
                 cv2.imwrite(name, tag_im)
                 n_saved += 1
                 # print(f"Created {name} of size {tag_im.shape[0]}x{tag_im.shape[1]}")
@@ -204,9 +205,9 @@ print(f"{n_saved} files written to \"{folder_name}\"")
 
 # prints report on output image size
 if OUTPUT_HEIGHT is None:
-    frame_paths = glob.glob(folder_name + "/*.jp*g")
+    frame_paths = glob.glob(folder_name + f"/*.{IMAGE_FORMAT}")
     if len(frame_paths) == 0:
-        print(f"No .jpg/.jpeg files in {folder_name}")
+        print(f"No .{IMAGE_FORMAT} files in {folder_name}")
 
     sizes = [Image.open(f, 'r').size for f in frame_paths]
     print(f"Largest output image is {max(sizes)} and smallest is {min(sizes)}")

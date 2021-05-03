@@ -158,10 +158,11 @@ def predict_model(model, image_dir, input_dim, magnification=2):
     start = time.time()
     y = model.predict(x)
     stop = time.time()
-    print("Elapsed time: " + str(stop-start))
+    # print("Elapsed time: " + str(stop-start))
     y = tf.reshape(y, (input_dim*magnification, input_dim*magnification, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
     bicubic = LR.resize((input_dim*magnification,input_dim*magnification), resample=Image.ANTIALIAS)
+    
     return HR, LR, bicubic
 
 def prelu(x, i):
