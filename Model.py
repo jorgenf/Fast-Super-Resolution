@@ -1,21 +1,14 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import Data
 import datetime
 from PIL import Image
 import time
 
-'''
-physical_devices = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
-# Enable/disable GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-'''
+import Data
+
 
 def create_model(dim, n, d, s, m):
     # Input layer. Takes the image shape and one channel for greyscale images.
@@ -26,33 +19,44 @@ def create_model(dim, n, d, s, m):
     # Feature extraction
     f_1 = 5
     n_1 = d
-    conv56_5 = layers.Conv2D(filters=n_1, kernel_size=(f_1,f_1), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1) ,activation=keras.activations.relu)
+    conv56_5 = layers.Conv2D(filters=n_1, kernel_size=(f_1,f_1), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = conv56_5(inputs)
+    prelu1 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+    x = prelu1(x)
 
     # Shrinking
     f_2 = 1
     n_2 = s
-    conv12_1 = layers.Conv2D(filters=n_2, kernel_size=(f_2,f_2), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
+    conv12_1 = layers.Conv2D(filters=n_2, kernel_size=(f_2,f_2), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = conv12_1(x)
+    prelu2 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+    x = prelu2(x)
+
 
     # Non-linear mapping
     f_3 = 3
     n_3 = s
     for l in range(0,m):
-        conv56_1 = layers.Conv2D(filters=n_3, kernel_size=(f_3,f_3), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
+        conv56_1 = layers.Conv2D(filters=n_3, kernel_size=(f_3,f_3), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
         x = conv56_1(x)
+        prelu3 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        x = prelu3(x)
 
     # Expanding
     f_4 = 1
     n_4 = d
-    conv12_1 = layers.Conv2D(filters=n_4, kernel_size=(f_4,f_4), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
+    conv12_1 = layers.Conv2D(filters=n_4, kernel_size=(f_4,f_4), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = conv12_1(x)
+    prelu4 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+    x = prelu4(x)
 
     # Deconvolution
     f_5 = 9
     n_5 = 1
-    deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1), activation=keras.activations.relu)
-    outputs = deconv1_9(x)
+    deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
+    x = deconv1_9(x)
+    prelu5 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+    outputs = prelu5(x)
 
     # Creates the model by assigning the input and output layer.
     model = keras.Model(inputs=inputs, outputs=outputs, name="FSRCNN")
@@ -61,7 +65,7 @@ def create_model(dim, n, d, s, m):
     #keras.utils.plot_model(model, "my_first_model.png")
 
     # Compiles model with selected features.
-    model.compile(loss=keras.losses.mean_squared_error, optimizer=keras.optimizers.Adam(), metrics=["accuracy"])
+    model.compile(loss=keras.losses.mean_squared_error, optimizer=keras.optimizers.Adam(), metrics=["mean_squared_error"])
 
     return model
 
@@ -165,8 +169,6 @@ def predict_model(model, image_dir, input_dim, magnification=2):
     
     return HR, LR, bicubic
 
-def prelu(x, i):
-    return keras.activations.relu()
 
 
 if __name__ == "__main__":
