@@ -5,6 +5,8 @@ from PIL import Image
 import sys
 import os
 from pathlib import Path
+
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # sys.path.append("/home/wehak/code/ACIT4630_SemesterProject")
 
 import cv2
@@ -70,6 +72,7 @@ def evaluate_model_single_tag(
 
     # metrics
     n_ground_truth_detected = 0
+    n_lr_detected = 0
     n_hr_detected = 0
     n_bicubic_detected = 0
     n_images = 0
@@ -89,6 +92,7 @@ def evaluate_model_single_tag(
         # image = cv2.imread(image_path, 0)
         image = np.array(Image.open(image_path).convert("L"))
         n_ground_truth_detected += find_tags(image, im_tag, im_name)
+        n_lr_detected += find_tags(np.array(LR), im_tag, im_name)
         n_hr_detected += find_tags(np.array(HR), im_tag, im_name)
         n_bicubic_detected += find_tags(np.array(bicubic), im_tag, im_name)
 
@@ -100,6 +104,7 @@ def evaluate_model_single_tag(
     print("Detection rates:")
     print("------------------------")
     print(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %")
+    print(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %")
     print(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %")
     print(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %")
     print("------------------------")
@@ -108,7 +113,6 @@ def evaluate_model_single_tag(
 
 # run module independently
 if __name__ == "__main__":
-
     # seems necessary to avoid crashing the model
     physical_devices = tf.config.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
