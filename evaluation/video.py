@@ -17,13 +17,10 @@ Output is images of spesified size
 """
 
 # settings
-INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH1_35-15.mp4")
-OUTPUT_FRAMES = Path("evaluation_images/valid_tags") # save frame if any tag is detected
-SAVE_FRAME_EVERY_N_SECONDS = 1 # decimals for multiple saves per second
-OUTPUT_HEIGHT = None # size of output image, None to use natural size
-IMAGE_FORMAT = "png"
-TAG_PADDING = 0.0 # percentage size of tag added as padding
-ASPECT_RATIO_DEVIATION = 0.6 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
+INPUT_VIDEO = Path("/home/wehak/Videos/ch1_fading.mp4")
+# OUTPUT_FRAMES = Path("evaluation_images/isolated_tags") # save frame if any tag is detected
+TAG_PADDING = 1.0 # percentage size of tag added as padding when searching forn new
+# ASPECT_RATIO_DEVIATION = 0.6 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 
 
 
@@ -36,20 +33,20 @@ font = cv2.FONT_HERSHEY_PLAIN
 #misc
 input_file_name = os.path.splitext(os.path.basename(INPUT_VIDEO))[0]
 
-# create a output folder
-if OUTPUT_HEIGHT:
-    size_str = OUTPUT_HEIGHT
-else:
-    size_str = "x"
+# # create a output folder
+# if OUTPUT_HEIGHT:
+#     size_str = OUTPUT_HEIGHT
+# else:
+#     size_str = "x"
 
-folder_name = Path(f"{OUTPUT_FRAMES}/{input_file_name}_{size_str}_{IMAGE_FORMAT}")
-try:  
-    # creating a folder 
-    if not os.path.exists(folder_name): 
-        os.makedirs(folder_name) 
-# if not created then raise error 
-except OSError: 
-    print (f'Error: Creating directory of {folder_name}') 
+# folder_name = Path(f"{OUTPUT_FRAMES}/{INPUT_VIDEO.stem}_{size_str}_{IMAGE_FORMAT}")
+# try:  
+#     # creating a folder 
+#     if not os.path.exists(folder_name): 
+#         os.makedirs(folder_name) 
+# # if not created then raise error 
+# except OSError: 
+#     print (f'Error: Creating directory of {folder_name}') 
 
 # create video reader object
 cap = cv2.VideoCapture(str(INPUT_VIDEO)) # read video file
@@ -59,13 +56,13 @@ cap = cv2.VideoCapture(str(INPUT_VIDEO)) # read video file
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
 fps = round(cap.get(cv2.CAP_PROP_FPS))
-skip = int(SAVE_FRAME_EVERY_N_SECONDS * fps)
+# skip = int(SAVE_FRAME_EVERY_N_SECONDS * fps)
 
 # metrics
 tags_found = 0
 frame_count = 0
-n_saved = 0
-saved_aspect_ratios = []
+# n_saved = 0
+# saved_aspect_ratios = []
 
 # main loop
 while(True):
@@ -86,6 +83,7 @@ while(True):
         n_ids = len(ids)
         tags_found += n_ids
 
+    """
     # crop out tags and make images every N'th frame
     if (frame_count % skip == 0) and (ids is not None): # set with SAVE_FRAME_EVERY_N_SECONDS
         # iterate the the list of valid tags detected by openCV aruco
@@ -173,7 +171,7 @@ while(True):
                 cv2.imwrite(str(name), tag_im)
                 n_saved += 1
                 # print(f"Created {name} of size {tag_im.shape[0]}x{tag_im.shape[1]}")
-
+                # """
                 # draw rectangle and ID on frame    
                 # DO NOT USE other than for debugging. will create drawings on output images
                 # cv2.putText(frame, f"id: {ids[i][0]}", top_left, font, 1, (0,0,255), 1, cv2.LINE_AA)
@@ -181,7 +179,7 @@ while(True):
     
     # draw detected aruco tags
     frame = aruco.drawDetectedMarkers(frame, corners, ids=ids)
-    # frame = aruco.drawDetectedMarkers(frame, rejectedImgPoints, borderColor=(0, 0, 255))
+    frame = aruco.drawDetectedMarkers(frame, rejectedImgPoints, borderColor=(0, 0, 255))
     cv2.putText(frame, f"tags: {n_ids}", (10, 50), font, 4, (255,111,255), 2, cv2.LINE_AA)
 
     # display frame
@@ -203,17 +201,18 @@ print(f"Tags detected total: {tags_found}")
 print(f"Tags detected per frame: {tags_found / frame_count:.3f}")
 print(f"{n_saved} files written to \"{folder_name}\"")
 
+"""
 # prints report on output image size
 if OUTPUT_HEIGHT is None:
-    # frame_paths = glob.glob(folder_name + f"/*.{IMAGE_FORMAT}")
-    frame_paths = list(folder_name.glob(f"*.{IMAGE_FORMAT}"))
+    frame_paths = glob.glob(folder_name + f"/*.{IMAGE_FORMAT}")
     if len(frame_paths) == 0:
         print(f"No .{IMAGE_FORMAT} files in {folder_name}")
-    else:
-        sizes = [Image.open(f, 'r').size for f in frame_paths]
-        print(f"Largest output image is {max(sizes)} and smallest is {min(sizes)}")
+
+    sizes = [Image.open(f, 'r').size for f in frame_paths]
+    print(f"Largest output image is {max(sizes)} and smallest is {min(sizes)}")
 else:
     print(f"Output image size is {OUTPUT_HEIGHT}x{OUTPUT_HEIGHT}")
 
 # reprort on AR
 print(f"Aspect ratio vary from {min(saved_aspect_ratios):.2f} to {max(saved_aspect_ratios):.2f}")
+"""
