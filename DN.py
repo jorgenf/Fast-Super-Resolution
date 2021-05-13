@@ -9,8 +9,9 @@ import time
 import Data
 import SR
 import math
+from Loss import getL1SSIM, getL1, getSSIM
 
-def create_model(dim):
+def create_model(dim, loss="L1SSIM"):
 
     input = keras.Input(shape=(dim, dim, 1,))
     x = input
@@ -48,7 +49,11 @@ def create_model(dim):
     output_layer = keras.layers.Conv2DTranspose(filters=1, kernel_size=4, strides=2, activation=keras.activations.tanh, padding="SAME")
     output = output_layer(x)
     model = keras.Model(inputs=input, outputs=output)
-    model.compile(loss=keras.losses.mean_squared_error, optimizer=keras.optimizers.Adam(), metrics=["mean_squared_error"])
+    if loss == "L1SSIM":
+        model.compile(loss=getL1SSIM, optimizer=keras.optimizers.Adam(), metrics=[getL1SSIM, getL1, getSSIM, "mean_squared_error"])
+    else:
+        model.compile(loss=keras.losses.mean_squared_error, optimizer=keras.optimizers.Adam(),
+                      metrics=["mean_squared_error"])
     model.summary()
     return model
 

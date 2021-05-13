@@ -9,6 +9,7 @@ def import_SR_images(split, loc="images/funiegan/", LR=120, HR=240):
     n = 0
     l = len([name for name in os.listdir(loc) if os.path.isfile(os.path.join(loc, name))])
     for filename in os.listdir(loc):
+        n += 1
         p = math.ceil((n/l)*100)
         print("\r" + "Importing images: " + str(p) + "%\t" + "#"*p, end="")
         img = Image.open(loc + filename)
@@ -24,7 +25,7 @@ def import_SR_images(split, loc="images/funiegan/", LR=120, HR=240):
 
         X.append(x)
         Y.append(y)
-        n += 1
+
 
     print("\nImported " + str(len(X)) + " images!")
 
@@ -46,6 +47,7 @@ def import_DN_images(split, x_loc, y_loc, dim):
             img = img.convert("L")
             img = img.crop((0, 0, dim, dim))
             img = np.asarray(img)
+            n += 1
             p = math.ceil((n/l)*100)
             if loc == x_loc:
                 print("\r" + "Importing noisy images: " + str(p) + "%\t" + "#"*p, end="")
@@ -53,7 +55,7 @@ def import_DN_images(split, x_loc, y_loc, dim):
             else:
                 print("\r" + "Importing clean images: " + str(p) + "%\t" + "#" * p, end="")
                 Y.append(img)
-            n += 1
+
         print("\nImported " + str(len(X)) + " images!")
 
 
@@ -61,5 +63,8 @@ def import_DN_images(split, x_loc, y_loc, dim):
     Y_train = np.asarray(Y[0: l - round(l * split)])
     X_test = np.asarray(X[l - round(l * split):])
     Y_test = np.asarray(Y[l - round(l * split):])
+
+    x = Image.fromarray(X_train[55])
+    y = Image.fromarray(Y_train[55])
     data = {"x_loc": x_loc, "y_loc": y_loc, "X_train" : X_train, "Y_train" : Y_train, "X_test" : X_test, "Y_test" : Y_test}
     return data

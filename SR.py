@@ -10,7 +10,7 @@ import time
 import Data
 
 
-def create_model(dim, n, d, s, m):
+def create_model(dim, n, d, s, m, activation="relu"):
     # Input layer. Takes the image shape and one channel for greyscale images.
     inputs = keras.Input(shape=(dim,dim,1,))
 
@@ -21,17 +21,34 @@ def create_model(dim, n, d, s, m):
     n_1 = d
     conv56_5 = layers.Conv2D(filters=n_1, kernel_size=(f_1,f_1), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = conv56_5(inputs)
-    prelu1 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
-    x = prelu1(x)
+    if activation=="relu":
+        relu1 = keras.activations.relu
+        x = relu1(x)
+    elif activation=="lrelu":
+        lrelu1 = keras.layers.LeakyReLU(alpha=0.3)
+        x = lrelu1(x)
+    elif activation == "prelu":
+        prelu1 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        x = prelu1(x)
+    else:
+        raise Exception("No valid activation function chosen...")
 
     # Shrinking
     f_2 = 1
     n_2 = s
     conv12_1 = layers.Conv2D(filters=n_2, kernel_size=(f_2,f_2), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = conv12_1(x)
-    prelu2 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
-    x = prelu2(x)
-
+    if activation=="relu":
+        relu2 = keras.activations.relu
+        x = relu2(x)
+    elif activation=="lrelu":
+        lrelu2 = keras.layers.LeakyReLU(alpha=0.3)
+        x = lrelu2(x)
+    elif activation == "prelu":
+        prelu2 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        x = prelu2(x)
+    else:
+        raise Exception("No valid activation function chosen...")
 
     # Non-linear mapping
     f_3 = 3
@@ -39,24 +56,51 @@ def create_model(dim, n, d, s, m):
     for l in range(0,m):
         conv56_1 = layers.Conv2D(filters=n_3, kernel_size=(f_3,f_3), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
         x = conv56_1(x)
-        prelu3 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
-        x = prelu3(x)
+        if activation == "relu":
+            relu3 = keras.activations.relu
+            x = relu3(x)
+        elif activation == "lrelu":
+            lrelu3 = keras.layers.LeakyReLU(alpha=0.3)
+            x = lrelu3(x)
+        elif activation == "prelu":
+            prelu3 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+            x = prelu3(x)
+        else:
+            raise Exception("No valid activation function chosen...")
 
     # Expanding
     f_4 = 1
     n_4 = d
     conv12_1 = layers.Conv2D(filters=n_4, kernel_size=(f_4,f_4), strides=(1,1), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = conv12_1(x)
-    prelu4 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
-    x = prelu4(x)
+    if activation=="relu":
+        relu4 = keras.activations.relu
+        x = relu4(x)
+    elif activation=="lrelu":
+        lrelu4 = keras.layers.LeakyReLU(alpha=0.3)
+        x = lrelu4(x)
+    elif activation=="prelu":
+        prelu4 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        x = prelu4(x)
+    else:
+        raise Exception("No valid activation function chosen...")
 
     # Deconvolution
     f_5 = 9
     n_5 = 1
     deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
     x = deconv1_9(x)
-    prelu5 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
-    outputs = prelu5(x)
+    if activation=="relu":
+        relu5 = keras.activations.relu
+        outputs = relu5(x)
+    elif activation=="lrelu":
+        lrelu5 = keras.layers.LeakyReLU(alpha=0.3)
+        outputs = lrelu5(x)
+    elif activation == "prelu":
+        prelu5 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        outputs = prelu5(x)
+    else:
+        raise Exception("No valid activation function chosen...")
 
     # Creates the model by assigning the input and output layer.
     model = keras.Model(inputs=inputs, outputs=outputs, name="FSRCNN")
@@ -99,11 +143,6 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     print("Test accuracy:", test_scores[1])
 
     # Saved model in separate directory
-    # dtmin = str(datetime.datetime.now().minute)
-    # dth = str(datetime.datetime.now().hour)
-    # dtd = str(datetime.datetime.now().day)
-    # dtm = str(datetime.datetime.now().month)
-    # dir = working_dir + "/saved_models/" + dim + "_" + dth + "-" + dtmin + "_" + dtd + "-" + dtm
     dir = f"{directory}/saved_models/SR/{dim}_{model_alias}"
     try:
         os.mkdir(dir)
