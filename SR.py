@@ -126,9 +126,24 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     # infer image dimensions by size of array
     dim = X_train[0].shape[0]
 
-    # Trains the model.
-    log_dir = directory + "logs/fit/" + model_alias
+
+    # Creates directory to save information
+    dir = f"{directory}/saved_models/SR/{dim}_{model_alias}"
+    try:
+        os.mkdir(dir)
+    except:
+        print(f"Failed to create directory \"{dir}\"")
+
+    # Creates directory for logs
+    log_dir = dir + "/logs/fit/"
+    try:
+        os.mkdir(log_dir)
+    except:
+        print(f"Failed to create directory \"{log_dir}\"")
+    # Adds tensorboard
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+    # Trains the model.
     history = model.fit(
         X_train, 
         Y_train, 
@@ -143,11 +158,7 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     print("Test accuracy:", test_scores[1])
 
     # Saved model in separate directory
-    dir = f"{directory}/saved_models/SR/{dim}_{model_alias}"
-    try:
-        os.mkdir(dir)
-    except:
-        print(f"Failed to create directory \"{dir}\"")
+
     model.save(dir + "/")
 
     # Saves info about model
@@ -204,7 +215,7 @@ def predict_model(model, image_dir, scale=2):
     # print("Elapsed time: " + str(stop-start))
     y = tf.reshape(y, (input_dim * scale, input_dim * scale, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
-    bicubic = LR.resize((input_dim * scale, input_dim * scale), resample=Image.ANTIALIAS)
+    bicubic = LR.resize((input_dim * scale, input_dim * scale), resample=Image.BICUBIC)
     
     return HR, LR, bicubic
 
