@@ -64,7 +64,5 @@ def import_DN_images(split, x_loc, y_loc, dim):
     X_test = np.asarray(X[l - round(l * split):])
     Y_test = np.asarray(Y[l - round(l * split):])
 
-    x = Image.fromarray(X_train[55])
-    y = Image.fromarray(Y_train[55])
     data = {"x_loc": x_loc, "y_loc": y_loc, "X_train" : X_train, "Y_train" : Y_train, "X_test" : X_test, "Y_test" : Y_test}
     return data

@@ -136,10 +136,7 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
 
     # Creates directory for logs
     log_dir = dir + "/logs/fit/"
-    try:
-        os.mkdir(log_dir)
-    except:
-        print(f"Failed to create directory \"{log_dir}\"")
+
     # Adds tensorboard
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
@@ -167,29 +164,6 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
         info.write("Epochs: " + str(epochs) + "\tBatch size: " + str(batch_size) + "\n")
         model.summary(print_fn=lambda x: info.write(x + '\n'))
         info.close()
-
-    # os.mkdir(dir + "/assets/images")
-    # dim = tf.shape(X_train)[-1]
-    # img0, LR0, b0 = predict_model(model, working_dir + "/images/CH1_frames/charuco_36-18-0.jpg", dim=dim)
-    # img0.save(dir + "/assets/images/charuco_36-18-0.jpg")
-    # img1, LR1, b1 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-21.jpg", dim=dim)
-    # img1.save(dir + "/assets/images/charuco_CH1_35-15-21.jpg")
-    # img2, LR2, b2 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-30.jpg", dim=dim)
-    # img2.save(dir + "/assets/images/charuco_CH1_35-15-30.jpg")
-    # img3, LR3, b3 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-98.jpg", dim=dim)
-    # img3.save(dir + "/assets/images/charuco_CH1_35-15-98.jpg")
-    # img4, LR4, b4 = predict_model(model, working_dir + "/images/CH1_frames/charuco_CH1_35-15-4.jpg", dim=dim)
-    # img4.save(dir + "/assets/images/charuco_CH1_35-15-4.jpg")
-    # img5, LR5, b5 = predict_model(model, working_dir + "/images/FunieGanData/nm_0up.jpg", dim=dim)
-    # img5.save(dir + "/assets/images/nm_0up.jpg")
-    # img6, LR6, b6 = predict_model(model, working_dir + "/images/FunieGanData/nm_78up.jpg", dim=dim)
-    # img6.save(dir + "/assets/images/nm_78up.jpg")
-    # img7, LR7, b7 = predict_model(model, working_dir + "/images/FunieGanData/nm_76up.jpg", dim=dim)
-    # img7.save(dir + "/assets/images/nm_76up.jpg")
-    # img8, LR8, b8 = predict_model(model, working_dir + "/images/FunieGanData/nm_286up.jpg", dim=dim)
-    # img8.save(dir + "/assets/images/nm_286up.jpg")
-    # img9, LR9, b9 = predict_model(model, working_dir + "/images/FunieGanData/nm_255up.jpg", dim=dim)
-    # img9.save(dir + "/assets/images/nm_255up.jpg")
 
     return model
 

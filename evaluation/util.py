@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 
-import Model
+import SR
 
 """
 Inputs:
@@ -27,7 +27,7 @@ Outputs:
     - metrics on image quality
 """
 def evaluate_model_single_tag(
-    model_name, model_input_size, # model name and input size
+    model_name, # model name and input size
     eval_im_folder, eval_im_format, # path to folder of evaluation images and their format (.jpg, .png etc)
     eval_sample_frac=1.0 # fraction of images in "eval_im_folder" checked
     ): 
@@ -45,7 +45,7 @@ def evaluate_model_single_tag(
             print(f"No .{im_format} files in \"{INPUT_FRAMES_FOLDER}\"")
 
     # load model
-    model = Model.load_model(model_name)
+    model = SR.load_model(model_name)
 
     # count tags. assumes input is a greyscale image
     def find_tags(input_image, true_tag_id, input_im_name):
@@ -86,7 +86,7 @@ def evaluate_model_single_tag(
         im_name = Path(image_path).name
 
         # for image_path in evaluation_images:
-        HR, LR, bicubic = Model.predict_model(model, image_path, model_input_size)
+        HR, LR, bicubic = SR.predict_model(model, image_path)
 
         # convert images to openCV format and detect markers
         # image = cv2.imread(image_path, 0)
@@ -110,6 +110,18 @@ def evaluate_model_single_tag(
     print("------------------------")
     print(f"Finished in {time.time() - start_t:.1f} s")
 
+
+    with open(model_name + "/assets/evaluation.txt", 'w') as info:
+        info.write(f"Evaluated {n_images} images\n")
+        info.write("Detection rates:\n")
+        info.write("------------------------\n")
+        info.write(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %\n")
+        info.write(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %\n")
+        info.write(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %\n")
+        info.write(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %\n")
+        info.write("------------------------\n")
+        info.write(f"Finished in {time.time() - start_t:.1f} s\n")
+        info.close()
 
 # run module independently
 if __name__ == "__main__":
