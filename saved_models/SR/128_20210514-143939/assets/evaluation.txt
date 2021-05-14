@@ -1,0 +1,9 @@
+Evaluated 485 images
+Detection rates:
+------------------------
+Ground truth	98.97 %
+LR		60.62 %
+HR		90.52 %
+Bicubic		84.74 %
+------------------------
+Finished in 22.2 s
