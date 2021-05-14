@@ -28,7 +28,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
         lrelu1 = keras.layers.LeakyReLU(alpha=0.3)
         x = lrelu1(x)
     elif activation == "prelu":
-        prelu1 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        prelu1 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1), shared_axes=[1,2,3])
         x = prelu1(x)
     else:
         raise Exception("No valid activation function chosen...")
@@ -45,7 +45,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
         lrelu2 = keras.layers.LeakyReLU(alpha=0.3)
         x = lrelu2(x)
     elif activation == "prelu":
-        prelu2 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        prelu2 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1), shared_axes=[1,2,3])
         x = prelu2(x)
     else:
         raise Exception("No valid activation function chosen...")
@@ -63,7 +63,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
             lrelu3 = keras.layers.LeakyReLU(alpha=0.3)
             x = lrelu3(x)
         elif activation == "prelu":
-            prelu3 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+            prelu3 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1), shared_axes=[1,2,3])
             x = prelu3(x)
         else:
             raise Exception("No valid activation function chosen...")
@@ -80,7 +80,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
         lrelu4 = keras.layers.LeakyReLU(alpha=0.3)
         x = lrelu4(x)
     elif activation=="prelu":
-        prelu4 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
+        prelu4 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1), shared_axes=[1,2,3])
         x = prelu4(x)
     else:
         raise Exception("No valid activation function chosen...")
@@ -89,7 +89,8 @@ def create_model(dim, n, d, s, m, activation="relu"):
     f_5 = 9
     n_5 = 1
     deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
-    x = deconv1_9(x)
+    outputs = deconv1_9(x)
+    '''
     if activation=="relu":
         relu5 = keras.activations.relu
         outputs = relu5(x)
@@ -101,6 +102,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
         outputs = prelu5(x)
     else:
         raise Exception("No valid activation function chosen...")
+'''
 
     # Creates the model by assigning the input and output layer.
     model = keras.Model(inputs=inputs, outputs=outputs, name="FSRCNN")
@@ -164,8 +166,8 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
         info.write("Epochs: " + str(epochs) + "\tBatch size: " + str(batch_size) + "\n")
         model.summary(print_fn=lambda x: info.write(x + '\n'))
         info.close()
-
-    return model
+    model_name = f"{dim}_{model_alias}"
+    return model, model_name
 
 
 def load_model(dir):
