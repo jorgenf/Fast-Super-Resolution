@@ -43,11 +43,11 @@ TAG_PADDING = 0.3 # percentage size of tag added as padding when searching forn 
 ASPECT_RATIO_DEVIATION = 0.7 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 IMAGE_FORMAT = "png"
 # CLASSIFIER_MODEL = Path("evaluation/logistic_models/2021-05-14_20-10-42.joblib")
-CLASSIFIER_MODEL = Path("evaluation/logistic_models/2021-05-15_14-14-24.joblib")
+CLASSIFIER_MODEL = Path("evaluation/logistic_models/2021-05-15_17-35-14.joblib")
 FFT_DIMS = (16, 16)
 # CANNY_FILTER_SIZE = 3
     
-ENHANCER_MODEL = Path("saved_models/SR/128_20210514-143939")
+ENHANCER_MODEL = Path("saved_models/SR/128_20210515-104132_Final")
 ENHANCER_INPUT_SIZE = 128
 ENHANCER_OUTPUT_SIZE = 256 # pixel height of enhancement algorithm
 
@@ -170,7 +170,7 @@ cap = cv2.VideoCapture(str(INPUT_VIDEO)) # read video file
 # set up recording
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
-fps = int(cap.get(cv2.CAP_PROP_FPS))
+fps = round(cap.get(cv2.CAP_PROP_FPS))
 
 # initiate video capture object
 if OUTPUT_VIDEO is not None:
