@@ -17,13 +17,14 @@ Output is images of spesified size
 """
 
 # settings
+# INPUT_VIDEO = Path("/home/wehak/Videos/ch1_fading.mp4")
 INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH1_35-15.mp4")
-OUTPUT_FRAMES = Path("evaluation_images/valid_tags") # save frame if any tag is detected
-SAVE_FRAME_EVERY_N_SECONDS = 1 # decimals for multiple saves per second
+OUTPUT_FRAMES = Path("evaluation_images/rejected_tags") # save frame if any tag is detected
+SAVE_FRAME_EVERY_N_SECONDS = 2 # decimals for multiple saves per second
 OUTPUT_HEIGHT = None # size of output image, None to use natural size
 IMAGE_FORMAT = "png"
-TAG_PADDING = .3 # percentage size of tag added as padding
-ASPECT_RATIO_DEVIATION = 0.7 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
+TAG_PADDING = 0.0 # percentage size of tag added as padding
+ASPECT_RATIO_DEVIATION = 0.6 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 
 
 
@@ -89,7 +90,7 @@ while(True):
     # crop out tags and make images every N'th frame
     if (frame_count % skip == 0) and (ids is not None): # set with SAVE_FRAME_EVERY_N_SECONDS
         # iterate the the list of valid tags detected by openCV aruco
-        for i, tag in enumerate(corners):
+        for i, tag in enumerate(rejectedImgPoints):
             
             # iterate through each tag
             for j, square in enumerate(tag):
@@ -169,7 +170,7 @@ while(True):
                             cv2.BORDER_CONSTANT)
                     
                 # save image                
-                name = Path(f"{folder_name}/{round(frame_count // fps)}-{round(frame_count % fps)}_{ids[i][0]}.{IMAGE_FORMAT}")
+                name = Path(f"{folder_name}/{round(frame_count // fps)}-{round(frame_count % fps)}_{i}.{IMAGE_FORMAT}")
                 cv2.imwrite(str(name), tag_im)
                 n_saved += 1
                 # print(f"Created {name} of size {tag_im.shape[0]}x{tag_im.shape[1]}")
@@ -180,12 +181,12 @@ while(True):
                 # frame = cv2.rectangle(frame, top_left, bottom_right, (255,111,255), 1)
     
     # draw detected aruco tags
-    frame = aruco.drawDetectedMarkers(frame, corners, ids=ids)
+    # frame = aruco.drawDetectedMarkers(frame, corners, ids=ids)
     # frame = aruco.drawDetectedMarkers(frame, rejectedImgPoints, borderColor=(0, 0, 255))
-    cv2.putText(frame, f"tags: {n_ids}", (10, 50), font, 4, (255,111,255), 2, cv2.LINE_AA)
+    # cv2.putText(frame, f"tags: {n_ids}", (10, 50), font, 4, (255,111,255), 2, cv2.LINE_AA)
 
-    # display frame
-    cv2.imshow('Display', frame)
+    # # display frame
+    # cv2.imshow('Display', frame)
     
     # quit if user press "q"
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -205,13 +206,13 @@ print(f"{n_saved} files written to \"{folder_name}\"")
 
 # prints report on output image size
 if OUTPUT_HEIGHT is None:
-    # frame_paths = glob.glob(folder_name + f"/*.{IMAGE_FORMAT}")
     frame_paths = list(folder_name.glob(f"*.{IMAGE_FORMAT}"))
+    # frame_paths = glob.glob(folder_name + f"/*.{IMAGE_FORMAT}")
     if len(frame_paths) == 0:
         print(f"No .{IMAGE_FORMAT} files in {folder_name}")
-    else:
-        sizes = [Image.open(f, 'r').size for f in frame_paths]
-        print(f"Largest output image is {max(sizes)} and smallest is {min(sizes)}")
+
+    sizes = [Image.open(f, 'r').size for f in frame_paths]
+    print(f"Largest output image is {max(sizes)} and smallest is {min(sizes)}")
 else:
     print(f"Output image size is {OUTPUT_HEIGHT}x{OUTPUT_HEIGHT}")
 

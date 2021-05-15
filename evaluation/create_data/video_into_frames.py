@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import cv2 as cv
 
@@ -11,30 +12,27 @@ Takes a video and creates frames as .jpg files according to parameters
 start_t = time.time()
 
 # settings 
-INPUT_VIDEO_PATH = "/home/hakon/Downloads/charuco_CH1_35-15.mp4"
-OUTPUT_PATH = "images/charuco"
-SAVED_FRAMES_PER_SECOND = 1
+INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH3_35-15.mp4")
+OUTPUT_PATH = Path(f"evaluation_images/frames/{INPUT_VIDEO.stem}")
+SAVED_FRAMES_PER_SECOND = 2
 
 # if output frames should be resized
 RESIZE_OUTPUT = False
 OUTPUT_HEIGHT = 256 # pixels (aspect ratio maintained unless crop is True)
 
 # if output frame should be cropped to a square
-SQUARE_CROP = True
+SQUARE_CROP = False
 
 
-input_file_name = os.path.splitext(os.path.basename(INPUT_VIDEO_PATH))[0]
+# input_file_name = os.path.splitext(os.path.basename(INPUT_VIDEO))[0]
 
-cap = cv.VideoCapture(INPUT_VIDEO_PATH)
+cap = cv.VideoCapture(str(INPUT_VIDEO))
 fps = round(cap.get(cv.CAP_PROP_FPS))
 
-  
+# creating a folder named data 
 try: 
-      
-    # creating a folder named data 
     if not os.path.exists(OUTPUT_PATH): 
         os.makedirs(OUTPUT_PATH) 
-  
 # if not created then raise error 
 except OSError: 
     print (f'Error: Creating directory of {OUTPUT_PATH}') 
@@ -63,7 +61,7 @@ while(True):
                 frame = frame[:, crop_offset:crop_offset+frame_height]
 
             # write file 
-            name = f"{OUTPUT_PATH}/{input_file_name}-{round(currentframe/fps)}.jpg"
+            name = f"{OUTPUT_PATH}/{INPUT_VIDEO.stem}-{round(currentframe/fps)}.jpg"
             print("Creating... " + name)
             cv.imwrite(name, frame)
 
