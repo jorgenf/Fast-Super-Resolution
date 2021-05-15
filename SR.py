@@ -89,8 +89,8 @@ def create_model(dim, n, d, s, m, activation="relu"):
     f_5 = 9
     n_5 = 1
     deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
-    outputs = deconv1_9(x)
-    '''
+    x = deconv1_9(x)
+
     if activation=="relu":
         relu5 = keras.activations.relu
         outputs = relu5(x)
@@ -102,7 +102,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
         outputs = prelu5(x)
     else:
         raise Exception("No valid activation function chosen...")
-'''
+
 
     # Creates the model by assigning the input and output layer.
     model = keras.Model(inputs=inputs, outputs=outputs, name="FSRCNN")
