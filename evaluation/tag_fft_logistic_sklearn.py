@@ -52,15 +52,15 @@ if __name__ == "__main__":
     # create dataset
     # valid = "evaluation_images/valid_tags/charuco_CH1_35-15_x_png"
     # rejects = "evaluation_images/rejected_tags/charuco_CH1_35-15_sorted"
-    valid = "evaluation_images/valid_tags/combined"
-    rejects = "evaluation_images/rejected_tags/combined"
+    valid = "evaluation_images/valid_tags/combined4"
+    rejects = "evaluation_images/rejected_tags/test4"
 
     # test the model performance for different parameters
     # test_dims = [(4, 4), (8, 8), (16, 16,), (32, 32)]
     # test_parameters(10, test_dims, valid, rejects)
 
     # bins in histogram
-    dims = (8, 8)
+    dims = (16, 16)
 
     # save model to path
     save_path = Path("evaluation/logistic_models")

@@ -18,12 +18,12 @@ Output is images of spesified size
 
 # settings
 INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH1_35-15.mp4")
-OUTPUT_FRAMES = Path("evaluation_images/isolated_tags") # save frame if any tag is detected
-SAVE_FRAME_EVERY_N_SECONDS = 2 # decimals for multiple saves per second
-OUTPUT_HEIGHT = 256 # size of output image, None to use natural size
+OUTPUT_FRAMES = Path("evaluation_images/valid_tags") # save frame if any tag is detected
+SAVE_FRAME_EVERY_N_SECONDS = 1 # decimals for multiple saves per second
+OUTPUT_HEIGHT = None # size of output image, None to use natural size
 IMAGE_FORMAT = "png"
-TAG_PADDING = .8 # percentage size of tag added as padding
-ASPECT_RATIO_DEVIATION = 0.6 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
+TAG_PADDING = .3 # percentage size of tag added as padding
+ASPECT_RATIO_DEVIATION = 0.7 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 
 
 

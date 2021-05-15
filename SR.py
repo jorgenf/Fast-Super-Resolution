@@ -196,16 +196,42 @@ def predict_model(model, image_dir, scale=2):
     return HR, LR, bicubic
 
 
+def predict(model, image_dir, scale=2):
+    input_dim = model.layers[0].get_input_at(0).get_shape().as_list()[1]
+    # LR = Image.open(image_dir)
+    # LR = LR.convert("L")
+    # w, h = LR.size
+    # LR = LR.crop((0, 0, min(w, h), min(w, h)))
+    # LR = LR.resize((input_dim, input_dim), resample=Image.BICUBIC)
 
-if __name__ == "__main__":
-    n = 2
-    d = 56
-    s = 12
-    m = 0
-    dim = 100
-    # dataset = "FunieGanData"
-    dataset = "CH1_frames"
-    data = Data.import_SR_images(loc="training_images/" + dataset + "/", split = 0.1, LR=dim, HR=dim * 2)
+    LR = Image.fromarray(image_dir)
+    LR = LR.convert("L")
+    w, h = LR.size
+    LR = LR.crop((0, 0, min(w, h), min(w, h)))
 
-    model = create_model(dim, n, d, s, m)
-    model = train_model(model, data, epochs=10, batch_size=32, model_alias="tester")
+    x = tf.keras.preprocessing.image.img_to_array(LR)
+    x = x / 255
+    x = tf.reshape(x, (1, input_dim, input_dim,))
+    start = time.time()
+    y = model.predict(x)
+    stop = time.time()
+    # print("Elapsed time: " + str(stop-start))
+    y = tf.reshape(y, (input_dim * scale, input_dim * scale, 1)) * 255
+    HR = tf.keras.preprocessing.image.array_to_img(y)
+    
+    return HR
+
+
+
+# if __name__ == "__main__":
+#     n = 2
+#     d = 56
+#     s = 12
+#     m = 0
+#     dim = 100
+#     # dataset = "FunieGanData"
+#     dataset = "CH1_frames"
+#     data = Data.import_SR_images(loc="training_images/" + dataset + "/", split = 0.1, LR=dim, HR=dim * 2)
+
+#     model = create_model(dim, n, d, s, m)
+#     model = train_model(model, data, epochs=10, batch_size=32, model_alias="tester")
