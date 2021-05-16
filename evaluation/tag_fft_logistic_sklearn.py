@@ -5,9 +5,14 @@ import time
 
 import numpy as np
 from numpy.lib.histograms import histogram
+from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn import svm
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import plot_precision_recall_curve
+
+import matplotlib.pyplot as plt
 
 # from create_data.create_tag_dataset import create_dataset
 from create_data.create_fft_dataset import create_dataset
@@ -27,13 +32,22 @@ def train_model(valid, rejects, dims):
     # create model
     # clf = LogisticRegression(
     clf = svm.SVC(
-        kernel="poly"
+        # kernel="poly"
         # verbose=1
         # random_state=1
         ).fit(x_train, y_train)
+
+    y_score = clf.decision_function(x_test)
+    avg_precision = average_precision_score(y_test, y_score)
+    print(f"Avg. precision-recall score: {avg_precision:.2f}")
+
+    disp = plot_precision_recall_curve(clf, x_test, y_test)
+    disp.ax_.set_title("Precision-recall curve")
+    plt.show()
+        
     return clf, clf.score(x_test, y_test)
 
-def test_parameters(n, dim_range, valid, rejects):
+def batch_test_parameters(n, dim_range, valid, rejects):
     from tqdm import trange
     # n = 1000
     for dims in dim_range:
@@ -45,6 +59,12 @@ def test_parameters(n, dim_range, valid, rejects):
             bin_total_score += score
         print(f"Dimensions: {dims}\t Acc: {bin_total_score/n:.5f}")
 
+# def get_scores(dims, valid, rejects):
+#     model, score = train_model(valid, rejects, dims)
+#     y_score = model.decision_function(x_test)
+#     avg_precision = average_precision_score(y_test, y_score)
+
+
 
 if __name__ == "__main__":
 
@@ -52,12 +72,12 @@ if __name__ == "__main__":
     # create dataset
     # valid = "evaluation_images/valid_tags/charuco_CH1_35-15_x_png"
     # rejects = "evaluation_images/rejected_tags/charuco_CH1_35-15_sorted"
-    valid = "evaluation_images/valid_tags/combined4"
-    rejects = "evaluation_images/rejected_tags/test4"
+    valid = "evaluation_images/valid_tags/old/combined4"
+    rejects = "evaluation_images/rejected_tags/old/sorted/combined"
 
     # test the model performance for different parameters
     # test_dims = [(4, 4), (8, 8), (16, 16,), (32, 32)]
-    # test_parameters(10, test_dims, valid, rejects)
+    # batch_test_parameters(10, test_dims, valid, rejects)
 
     # bins in histogram
     dims = (16, 16)
