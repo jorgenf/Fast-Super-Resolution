@@ -35,12 +35,13 @@ tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # settings
 # INPUT_VIDEO = Path("/home/wehak/Videos/ch1_fading.mp4")
-INPUT_VIDEO = Path("/home/wehak/Videos/grip_hover.mp4")
+INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH1_35-15.mp4")
 TAG_PADDING = 0.3 # percentage size of tag added as padding when searching forn new
 ASPECT_RATIO_DEVIATION = 0.7 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
 
 # save wrongly rejected markers
-OUTPUT_FRAMES = Path("evaluation_images/valid_tags") # save frame if any tag is detected, use Path object
+# OUTPUT_FRAMES = Path("evaluation_images/valid_tags") # save frame if any tag is detected, use Path object
+OUTPUT_FRAMES = None
 
 # save a video of the detection recording
 OUTPUT_VIDEO = None
@@ -174,10 +175,11 @@ if OUTPUT_VIDEO is not None:
 
 # metrics
 tags_found = 0
-extra_tags_found = 0
+extra_ids_total = 0
 enhance_attempt = 0
 frame_count = 0
 n_skipped = 0
+realtime_fps = 0
 
 # n_saved = 0
 saved_aspect_ratios = []
@@ -196,6 +198,7 @@ while(True):
     frame_time_start = time.time()
     n_ids = 0 # number of detected ids in session
     extra_ids = 0 # markers detected through enhancement
+    candidate_max_height = 0
 
     """ first marker detection cycle """
     # capture next frame and convert to grayscale
@@ -206,7 +209,7 @@ while(True):
     # add padding on top of frame, the area is used to display enhanced tags
     frame = cv2.copyMakeBorder(
         frame, 
-        ENHANCER_OUTPUT_SIZE,
+        ENHANCER_INPUT_SIZE,
         0,
         0,
         0,
@@ -228,6 +231,7 @@ while(True):
     if rejectedImgPoints is not None:
         rejected_img_matrices = []
         rejected_img_features = []
+        rejected_img_position = []
         # iterate the the list of valid tags detected by openCV aruco
         for i, tag in enumerate(rejectedImgPoints):
             
@@ -281,17 +285,25 @@ while(True):
                 # calculate histogram and add to stack of images to be classified
                 rejected_img_matrices.append(tag_im)
                 rejected_img_features.append(find_image_features(tag_im, FFT_DIMS))
+                rejected_img_position.append([tag])
 
 
-        # classify as either false negative or true negative
+        # if frame offers any rejected tags
         if len(rejected_img_features) > 0:
             img_classifications = classifier.predict(rejected_img_features)
-            # print(img_classifications)
-            x_offset = 10
-            y_offset = 0
+
+            # enhance each candidate to classify as either false negative or true negative
+            x_offset = 50
+            y_offset = 30
             valid_indexes = [i for i, e in enumerate(img_classifications) if e == 1]
             for i, idx in enumerate(valid_indexes):
                 img = rejected_img_matrices[idx]
+                        
+                # save candidate if desired
+                if OUTPUT_FRAMES is not None:                
+                    name = Path(f"{output_folder}/{round(frame_count // fps)}-{round(frame_count % fps)}_{i}.{IMAGE_FORMAT}")
+                    cv2.imwrite(str(name), img)
+                    n_saved += 1
 
                 # print(max(img.shape))
                 # frame[y_offset:y_offset + img.shape[0], x_offset:x_offset + img.shape[1]] = img
@@ -299,44 +311,54 @@ while(True):
                 # add padding to make it fit the model input size
                 enhanced_img, pad = add_padding(img, (ENHANCER_OUTPUT_SIZE // 2))
 
-                # enhance frame
+                # enhance cropped image
                 enhanced_img = SR.predict(enhancer, enhanced_img)
                 enhanced_img = cv2.cvtColor(np.array(enhanced_img), cv2.COLOR_GRAY2BGR)
-                # print(pad["top"]*2,pad["bottom"]*2, pad["left"]*2,pad["right"]*2)
-                # enhanced_img = enhanced_img[pad["top"]*2:pad["bottom"]*2, pad["left"]*2:pad["right"]*2]
-
-                if (width - x_offset < ENHANCER_OUTPUT_SIZE):
-                    y_offset += ENHANCER_OUTPUT_SIZE
-                    x_offset = 10
-
-                # draw enhanced image on frame
-                # frame[y_offset:y_offset + enhanced_img.shape[0], x_offset:x_offset + enhanced_img.shape[1]] = enhanced_img
-                frame[y_offset:y_offset + ENHANCER_OUTPUT_SIZE, x_offset:x_offset + ENHANCER_OUTPUT_SIZE] = enhanced_img
-                x_offset += ENHANCER_OUTPUT_SIZE
-                # x_offset += max(img.shape) * 2 + 10
-
                 enhance_attempt += 1
-                        
-                # # save image                
-                name = Path(f"{output_folder}/{round(frame_count // fps)}-{round(frame_count % fps)}_{i}.{IMAGE_FORMAT}")
-                cv2.imwrite(str(name), img)
-                n_saved += 1
 
+                # retry marker detection
+                enhanced_gray = cv2.cvtColor(enhanced_img, cv2.COLOR_BGR2GRAY)
+                enhanced_corners, enhanced_ids, _ = aruco.detectMarkers(
+                    enhanced_gray, aruco_dict, parameters=arucoParameters)
+                
+                if enhanced_ids is not None:
+                    if len(enhanced_ids) != 1:
+                        print(f"Error: Detected {len(enhanced_ids)} markers in enhanced image")
+                    else:
+                        extra_ids += 1
+                        extra_ids_total += 1
+                        enhanced_img = aruco.drawDetectedMarkers(enhanced_img, enhanced_corners, ids=enhanced_ids, borderColor=(255,111,255))
+                        frame = aruco.drawDetectedMarkers(frame, rejected_img_position[idx], ids=enhanced_ids, borderColor=(255,111,255))
 
-    """ second marker detection cycle """
-    # feed grayscaled video frame into tag detection algorithm
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    corners2, ids2, rejectedImgPoints2 = aruco.detectMarkers(
-        gray, aruco_dict, parameters=arucoParameters)
+                # crop enhanced candidate
+                enhanced_img = enhanced_img[pad["top"]*2:pad["bottom"]*2, pad["left"]*2:pad["right"]*2+15]
 
-    if ids2 is not None:
-        extra_ids = len(ids2) - n_ids
-        extra_tags_found += extra_ids
+                # draw enhanced candidate on frame
+                # 
+                if enhanced_img.shape[0] > candidate_max_height:
+                    candidate_max_height = enhanced_img.shape[0]
 
-    # draw detected aruco tags
-    frame = aruco.drawDetectedMarkers(frame, corners2, ids=ids2)
+                if (width - x_offset < (enhanced_img.shape[1] + 10)):
+                    y_offset += candidate_max_height + 10
+                    x_offset = 50
+                    candidate_max_height = 0
+
+                frame[y_offset:y_offset + enhanced_img.shape[0], x_offset:x_offset + enhanced_img.shape[1]] = enhanced_img
+                # frame[y_offset:y_offset + ENHANCER_OUTPUT_SIZE, x_offset:x_offset + ENHANCER_OUTPUT_SIZE] = enhanced_img
+                # x_offset += ENHANCER_OUTPUT_SIZE
+                x_offset += enhanced_img.shape[1] + 10
+
+    # draw detected aruco tags on output frame
+    frame = aruco.drawDetectedMarkers(frame, corners, ids=ids)
     frame = aruco.drawDetectedMarkers(frame, rejectedImgPoints, borderColor=(0, 0, 255))
-    cv2.putText(frame, f"tags: {n_ids} + {extra_ids}", (10, (frame.shape[0] - 40)), font, 4, (255,111,255), 2, cv2.LINE_AA)
+
+    # draw text on output frame
+    cv2.putText(frame, "Enhanced tags:", (10, 30), font, 2, (255,111,255), 1, cv2.LINE_AA)
+
+    realtime_fps = (1 / (time.time() - frame_time_start)) * 0.5 + realtime_fps * 0.5
+    cv2.putText(frame, f"FPS: {realtime_fps:.0f}", (10, (frame.shape[0] - 90)), font, 4, (255,111,255), 2, cv2.LINE_AA)
+
+    cv2.putText(frame, f"Tags: {n_ids:02d}+{extra_ids:02d}={n_ids+extra_ids:02d}", (10, (frame.shape[0] - 40)), font, 4, (255,111,255), 2, cv2.LINE_AA)
 
 
 
@@ -372,8 +394,8 @@ cv2.destroyAllWindows()
 print(f"Input video size {width}x{height} @ {fps}FPS")
 print(f"Tags detected total: {tags_found}")
 print(f"Tags detected per frame: {tags_found / frame_count:.3f}")
-print(f"Extra tags detected with enhancement total: {extra_tags_found}")
-print(f"Extra tags detected per enhancement: {extra_tags_found / enhance_attempt:.3f}. {enhance_attempt} attempts total")
+print(f"Extra tags detected with enhancement total: {extra_ids_total}")
+print(f"Extra tags detected per enhancement: {extra_ids_total / enhance_attempt:.3f}. {enhance_attempt} attempts total")
 print(f"Average {frames_per_sec:.3f} s per frame ({1 / frames_per_sec:.3f} Hz)")
 print(f"Skipped {n_skipped} images because size was larger than {ENHANCER_INPUT_SIZE} px")
 # print(f"{n_saved} files written to \"{output_folder}\"")
