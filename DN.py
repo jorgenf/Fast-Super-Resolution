@@ -121,3 +121,18 @@ def predict_model(model, image_dir):
     denoised = tf.keras.preprocessing.image.array_to_img(y)
 
     return denoised, noisy
+
+def predict(model, image_dir):
+    input_dim = model.layers[0].get_input_at(0).get_shape().as_list()[1]
+    # noisy = Image.open(image_dir)
+    noisy = Image.fromarray(image_dir)
+    noisy = noisy.convert("L")
+    noisy = noisy.crop((0, 0, input_dim, input_dim))
+    x = tf.keras.preprocessing.image.img_to_array(noisy)
+    x = x / 255
+    x = tf.reshape(x, (1, input_dim, input_dim,))
+    y = model.predict(x)
+    y = tf.reshape(y, (input_dim, input_dim, 1)) * 255
+    denoised = tf.keras.preprocessing.image.array_to_img(y)
+
+    return denoised

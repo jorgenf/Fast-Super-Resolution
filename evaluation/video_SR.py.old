@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 import time
 import joblib
-from PIL import Image
 import sys
 sys.path.append("/home/wehak/code/ACIT4630_SemesterProject")
 
@@ -25,6 +24,7 @@ from sklearn import svm
 import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import SR
 
 # seems necessary to avoid crashing the model
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -53,10 +53,8 @@ CLASSIFIER_MODEL = Path("evaluation/logistic_models/2021-05-15_17-35-14.joblib")
 FFT_DIMS = (16, 16)
 
 # enhancer model settings
-ENHANCER_NAME = "resize" # DN, SR, 1to1, resize
-# ENHANCER_MODEL = Path("saved_models/256_20210515-221533_best")
 ENHANCER_MODEL = Path("saved_models/SR/128_20210515-104132_Final")
-ENHANCER_INPUT_SIZE = 128*2
+ENHANCER_INPUT_SIZE = 128
 ENHANCER_OUTPUT_SIZE = 256 # pixel height of enhancement algorithm
 
 
@@ -69,12 +67,27 @@ font = cv2.FONT_HERSHEY_PLAIN
 """ helper functions """
 # creates a histogram if a image
 def find_image_features(input_img, dims):
-    # read image, find shape
+    features = []
+
+    # # read image, find shape
+    # img = cv2.imread(str(path), 0)
     img = cv2.cvtColor(input_img, cv2.COLOR_BGR2GRAY)
     img = cv2.resize(img, dims)
     dft = cv2.dft(np.float32(img),flags = cv2.DFT_COMPLEX_OUTPUT)
     dft_norm = dft[:,:,0] / dft[:,:,0].size
     return dft_norm.flatten()
+
+
+
+    # fft_sum = (np.sum(f.real) / f.size) / 255
+    fshift = np.fft.fftshift(f).real
+    # magnitude_spectrum = 20*np.log(np.abs(fshift))
+    return fshift.flatten()
+
+
+    # # return histogram
+    # return magnitude_spectrum.flatten()
+    # return list(x)
 
 def add_padding(img, output_size):
     pad = {
@@ -140,10 +153,11 @@ def make_folder(path):
 """ main """
 
 #make output folders
+folder_name = f"{INPUT_VIDEO.name}{ENHANCER_MODEL.name}_{FFT_DIMS}"
 if OUTPUT_SPREADSHEET is not None:
-    make_folder(Path(f"{OUTPUT_SPREADSHEET}/{INPUT_VIDEO.stem}"))
+    make_folder(OUTPUT_SPREADSHEET)
 if OUTPUT_FRAMES is not None:
-    saved_tags_output_folder = Path(f"{OUTPUT_FRAMES}/{INPUT_VIDEO.stem}")
+    saved_tags_output_folder = Path(f"{OUTPUT_FRAMES}/{folder_name}")
     make_folder(saved_tags_output_folder)
 
 # create video reader object
@@ -156,7 +170,7 @@ fps = round(cap.get(cv2.CAP_PROP_FPS))
 
 # initiate video capture object
 if OUTPUT_VIDEO is not None:
-    vid_output_name = Path(f"{OUTPUT_VIDEO}/{INPUT_VIDEO.stem}_{ENHANCER_NAME}.mp4")
+    vid_output_name = Path(f"{OUTPUT_VIDEO}/{INPUT_VIDEO.stem}_{ENHANCER_MODEL.name}.mp4")
     video_cap = cv2.VideoWriter(
         str(vid_output_name), 
         cv2.VideoWriter_fourcc(*"XVID"), 
@@ -179,13 +193,7 @@ spreadsheet_export = []
 classifier = joblib.load(CLASSIFIER_MODEL)
 
 # initiate enhancement model
-enhance_scale = ENHANCER_OUTPUT_SIZE / ENHANCER_INPUT_SIZE
-if ENHANCER_NAME == "SR":
-    import SR
-    enhancer = SR.load_model(ENHANCER_MODEL)
-elif ENHANCER_NAME == "DN":
-    import DN
-    enhancer = DN.load_model(ENHANCER_MODEL)
+enhancer = SR.load_model(ENHANCER_MODEL)
 
 
 # main loop
@@ -303,19 +311,10 @@ while(True):
                     n_saved += 1
 
                 # add padding to make it fit the model input size
-                padded_img, pad = add_padding(img, ENHANCER_INPUT_SIZE)
+                enhanced_img, pad = add_padding(img, (ENHANCER_OUTPUT_SIZE // 2))
 
                 # enhance cropped image
-                if ENHANCER_NAME == "SR":
-                    enhanced_img = SR.predict(enhancer, padded_img)
-                elif ENHANCER_NAME == "DN":
-                    enhanced_img = DN.predict(enhancer, padded_img)
-                elif ENHANCER_NAME == "1to1":
-                    enhanced_img = Image.fromarray(padded_img).convert("L")
-                elif ENHANCER_NAME == "resize":
-                    # enhanced_img = cv2.resize(padded_img, [x * enhance_scale for x in reversed(padded_img.shape[:2])])
-                    enhanced_img = Image.fromarray(padded_img).convert("L").resize([round(x * enhance_scale) for x in reversed(padded_img.shape[:2])])
-                    
+                enhanced_img = SR.predict(enhancer, enhanced_img)
                 enhanced_img = cv2.cvtColor(np.array(enhanced_img), cv2.COLOR_GRAY2BGR)
                 enhance_attempt += 1
 
@@ -335,10 +334,7 @@ while(True):
                         frame = aruco.drawDetectedMarkers(frame, rejected_img_position[idx], ids=enhanced_ids, borderColor=(255,111,255))
 
                 # crop enhanced candidate tag
-                enhanced_img = enhanced_img[
-                    round(pad["top"]*enhance_scale):round(pad["bottom"]*enhance_scale), 
-                    round(pad["left"]*enhance_scale):round(pad["right"]*enhance_scale+15)
-                    ]
+                enhanced_img = enhanced_img[pad["top"]*2:pad["bottom"]*2, pad["left"]*2:pad["right"]*2+15]
 
                 # draw enhanced candidate tag onto frame
                 # check pasted tags are not out bounds of frame
@@ -414,8 +410,8 @@ print(f"Skipped {n_skipped} images because size was larger than {ENHANCER_INPUT_
 
 if OUTPUT_SPREADSHEET is not None:
     dataframe = pd.DataFrame(spreadsheet_export)
-    dataframe.to_csv(Path(f"{OUTPUT_SPREADSHEET}/{INPUT_VIDEO.stem}/{ENHANCER_NAME}.csv"))
-    print(f"Saved \"{ENHANCER_NAME}.csv\" to \"{OUTPUT_SPREADSHEET}/{INPUT_VIDEO.stem}\"")
+    dataframe.to_csv(Path(f"{OUTPUT_SPREADSHEET}/{folder_name}.csv"))
+    print(f"Saved .csv file to \"{OUTPUT_SPREADSHEET}/{folder_name}\"")
 
 if OUTPUT_VIDEO is not None:
     print(f"Video file saved as \"{vid_output_name}\"")

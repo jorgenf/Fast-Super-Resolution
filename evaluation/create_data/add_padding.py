@@ -12,10 +12,10 @@ import os
 from tqdm import tqdm
 import cv2
 
-INPUT_FOLDER = Path("/home/wehak/code/ACIT4630_SemesterProject/evaluation_images/isolated_tags/ch2")
-IMAGE_FORMAT = "jpg"
-OUTPUT_FOLDER = Path("/home/wehak/code/ACIT4630_SemesterProject/evaluation_images/isolated_tags")
-OUTPUT_HEIGHT = 250
+INPUT_FOLDER = Path("evaluation_images/valid_tags/unrecognized_tags")
+IMAGE_FORMAT = "png"
+OUTPUT_FOLDER = Path("/home/wehak/code/ACIT4630_SemesterProject/evaluation_images")
+OUTPUT_HEIGHT = 128*2
 
 # search for files in given folder
 image_list = list(INPUT_FOLDER.glob(f"*.{IMAGE_FORMAT}"))
@@ -53,7 +53,8 @@ for i, img_path in enumerate(image_list):
             bottom_pad,
             0,
             0,
-            cv2.BORDER_CONSTANT)
+            cv2.BORDER_REPLICATE
+            )
 
     # add horizontal padding if cropped image is smaller than desired output image size
     if img.shape[1] < OUTPUT_HEIGHT:
@@ -68,7 +69,8 @@ for i, img_path in enumerate(image_list):
             0,
             left_pad,
             right_pad,
-            cv2.BORDER_CONSTANT)
+            cv2.BORDER_REPLICATE
+            )
         
     # save image                
     name = Path(f"{folder_name}/{i}-{img_shape[0]}x{img_shape[1]}.{IMAGE_FORMAT}")
