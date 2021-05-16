@@ -162,10 +162,11 @@ if __name__ == "__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-    # example parameters
-    model_name = Path("saved_models/SR/128_20210515-104132_Final")
+    # example parameters 
+    model_name = Path("saved_models/SR/128_20210515-104132_Final") 
     model_input_size = 128
-    eval_im_folder = Path("evaluation_images/unrecognized_tags_256px-padding_png")
+    # eval_im_folder = Path("evaluation_images/isolated_tags/charuco_CH1_35-15_256_png") # with ID validation
+    eval_im_folder = Path("evaluation_images/unrecognized_tags_256px-padding_png") # without ID validation
     eval_im_format = ("png", "jpg")
 
     # call evaluation function
@@ -175,13 +176,5 @@ if __name__ == "__main__":
         eval_im_folder, 
         eval_im_format,
         eval_sample_frac=0.1,
+        verify_id=False
         )
-
-
-# def evaluate_model_single_tag(
-#     model_name, # model name and input size
-#     model_type,
-#     eval_im_folder, eval_im_format, # path to folder of evaluation images and their format (.jpg, .png etc)
-#     eval_sample_frac=1.0, # fraction of images in "eval_im_folder" checked
-#     verify_id = False
-#     ): 
