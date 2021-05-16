@@ -6,6 +6,7 @@ from pathlib import Path
 import DN
 import SR
 import Data
+import Model
 from evaluation.util import evaluate_model_single_tag
 
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -22,15 +23,31 @@ data = Data.import_DN_images(0.2, x_loc="./training_images/distorted_flowers/", 
 model = DN.create_model(dim, loss="MSE")
 model = DN.train_model(model, data=data, epochs=500, batch_size=64, directory=".")
 
-model = DN.load_model("./saved_models/DN/256_20210512-003309")
-#x,y = DN.predict_model(model, image_dir="./training_images/CH1_frames/charuco_CH1_35-15-22.jpg")
-#x,y = DN.predict_model(model, image_dir="./training_images/flowers/image_00011.jpg")
-x,y = DN.predict_model(model, image_dir="./training_images/funiegan/nm_2524up.jpg")
-Image._show(x)
-Image._show(y)
+model = Model.load_model("./saved_models/DN/256_20210512-003309")
+img = Image.open("evaluation_images/isolated_tags/charuco_CH1_35-15_256_png/12-0_5.png")
 
+x,y = DN.predict_model(model, image_dir=img)
+x.show()
+y.show()
 '''
 
+path = "saved_models/SR/128_20210515-104132_Final"
+path2 = "saved_models/DN/256_20210515-221533_best"
+eval_im_folder = Path("evaluation_images/isolated_tags/charuco_CH1_35-15_256_png")
+eval_im_format = ("png", "jpg")
+
+# call evaluation function
+evaluate_model_single_tag(
+    path,
+    "SRDN",
+    eval_im_folder,
+    eval_im_format,
+    eval_sample_frac=1.0, # sample size: fraction of evalutation data used
+    second_model_name = path2
+    )
+
+
+'''
 n = 2
 d = 56
 s = 12
@@ -65,3 +82,4 @@ evaluate_model_single_tag(
     eval_sample_frac=1.0 # sample size: fraction of evalutation data used
     )
 
+'''

@@ -1,4 +1,5 @@
 import os
+import keras
 
 def normalize_data(data):
     X_train = data["X_train"] / 255
@@ -32,3 +33,6 @@ def save_model_info(dir, data, model, epochs, batch_size):
         print(f"Model information saved to {dir}/assets/summary.txt")
     except:
         print(f"Unable to save model information to {dir}/assets/summary.txt")
+
+def load_model(dir):
+    return keras.models.load_model(dir)

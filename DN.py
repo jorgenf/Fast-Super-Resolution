@@ -15,7 +15,8 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
     x = input
     skip_values = []
     # Convolution layers
-    for i in range(8):
+    n_conv = 8 if dim == 256 else 7
+    for i in range(n_conv):
         num_filters = min(64 * pow(2, i), 512)
         conv = keras.layers.Conv2D(filters=num_filters, kernel_size=4, strides=2, padding="SAME")
         x = conv(x)
@@ -30,12 +31,13 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
             x = lrelu(x)
         else:
             raise Exception("No valid activation function chosen.")
-        if i < 7:
+        if i < n_conv - 1:
             skip_values.append(x)
 
     # Deconvolution layers
     num_filters = 512
-    for i in range(7):
+    n_deconv = n_conv - 1
+    for i in range(n_deconv):
         deconv = keras.layers.Conv2DTranspose(filters=num_filters, kernel_size=4, strides=2, padding="SAME")
         x = deconv(x)
         batch_norm_deconv = keras.layers.BatchNormalization()
@@ -48,13 +50,13 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
             x = lrelu(x)
         else:
             raise Exception("No valid activation function chosen.")
-        if i < 3:
+        if i < n_deconv - 4:
             dropout = keras.layers.Dropout(rate=0.5)
             x = dropout(x)
         else:
             num_filters /= 2
         concat = keras.layers.Concatenate(axis=3)
-        x = concat([x,skip_values[6-i]])
+        x = concat([x,skip_values[n_deconv-1-i]])
 
     output_layer = keras.layers.Conv2DTranspose(filters=1, kernel_size=4, strides=2, activation=keras.activations.tanh, padding="SAME")
     output = output_layer(x)
@@ -105,12 +107,12 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     model_name = f"{dim}_{model_alias}"
     return model, model_name
 
-def load_model(dir):
-    return keras.models.load_model(dir)
-
 def predict_model(model, image_dir):
-    input_dim = model.layers[0].get_input_at(0).get_shape().as_list()[1]
-    noisy = Image.open(image_dir)
+    input_dim = Model.get_model_dimension(model)
+    if isinstance(image_dir, str):
+        noisy = Image.open(image_dir)
+    else:
+        noisy = image_dir
     noisy = noisy.convert("L")
     noisy = noisy.crop((0, 0, input_dim, input_dim))
     x = tf.keras.preprocessing.image.img_to_array(noisy)

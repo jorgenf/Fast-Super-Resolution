@@ -143,9 +143,6 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     return model, model_name
 
 
-def load_model(dir):
-    return keras.models.load_model(dir)
-
 
 def predict_model(model, image_dir, scale=2):
     input_dim = model.layers[0].get_input_at(0).get_shape().as_list()[1]
