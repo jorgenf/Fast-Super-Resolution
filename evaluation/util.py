@@ -53,7 +53,7 @@ def evaluate_model_single_tag(
     if model_type == "SR" or model_type == "DN":
         model = Model.load_model(model_name)
         model2 = None
-    elif model_type == "SRDN":
+    elif model_type == "SRDN" or model_type == "DNSR":
         model = Model.load_model(model_name)
         model2 = Model.load_model(second_model_name)
     else:
@@ -85,11 +85,11 @@ def evaluate_model_single_tag(
             return 0
 
     # metrics
+    n_images = 0
     n_ground_truth_detected = 0
     n_lr_detected = 0
     n_hr_detected = 0
     n_bicubic_detected = 0
-    n_images = 0
     n_denoised_detected = 0
     n_original_detected = 0
     n_denoised_HR_detected = 0
@@ -130,6 +130,15 @@ def evaluate_model_single_tag(
             denoised_BI, original_BI = DN.predict_model(model2, bicubic)
             n_denoised_HR_detected += find_tags(np.array(denoised_HR), im_tag, im_name)
             n_denoised_BI_detected += find_tags(np.array(denoised_BI), im_tag, im_name)
+        elif model_type == "DNSR":
+            denoised, original = DN.predict_model(model, image_path)
+            image = Image.open(image_path).convert("L")
+            denoised_HR, denoised_LR, denoised_BI = SR.predict_model(model2, denoised)
+            n_denoised_HR_detected += find_tags(np.array(denoised_HR), im_tag, im_name)
+            n_denoised_BI_detected += find_tags(np.array(denoised_BI), im_tag, im_name)
+            HR, LR, bicubic = SR.predict_model(model2, image)
+            n_hr_detected += find_tags(np.array(HR), im_tag, im_name)
+            n_bicubic_detected += find_tags(np.array(bicubic), im_tag, im_name)
         else:
             raise Exception("No valid model type chosen.")
         # convert images to openCV format and detect markers
@@ -157,6 +166,11 @@ def evaluate_model_single_tag(
         print(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %")
         print(f"Denoised bicubic\t\t{n_denoised_BI_detected / n_images * 100:.2f} %")
         print(f"Denoised HR\t\t{n_denoised_HR_detected / n_images * 100:.2f} %")
+    elif model_type == "DNSR":
+        print(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %")
+        print(f"HR\t\t{n_hr_detected/ n_images * 100:.2f} %")
+        print(f"Denoised bicubic\t\t{n_denoised_BI_detected / n_images * 100:.2f} %")
+        print(f"Denoised HR\t\t{n_denoised_HR_detected / n_images * 100:.2f} %")
     else:
         raise Exception("No valid model type chosen.")
     print("------------------------")
@@ -164,15 +178,18 @@ def evaluate_model_single_tag(
 
     if model_type == "SR" or model_type == "DN":
         directory = Path(f"{model_name}/assets/evaluation.txt")
-    elif model_type == "SRDN":
+    elif model_type == "SRDN" or model_type == "DNSR":
         n1 = os.path.basename(os.path.normpath(model_name))
         n2 = os.path.basename(os.path.normpath(second_model_name))
-        path = "saved_models/SRDN/" + n1 + "_" + n2
+        if model_type == "SRDN":
+            path = "saved_models/SRDN/" + n1 + "_" + n2
+        else:
+            path = "saved_models/DNSR/" + n1 + "_" + n2
         try:
             os.mkdir(path)
-            directory = path + "/summary.txt"
         except:
             raise Exception(f"Failed to create directory \"{dir}\" ")
+        directory = path + "/summary.txt"
     else:
         raise Exception("No valid model type chosen.")
     with open(directory, 'w') as info:
@@ -192,6 +209,11 @@ def evaluate_model_single_tag(
             info.write(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %\n")
             info.write(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %\n")
             info.write(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %\n")
+            info.write(f"Denoised bicubic\t\t{n_denoised_BI_detected / n_images * 100:.2f} %\n")
+            info.write(f"Denoised HR\t\t{n_denoised_HR_detected / n_images * 100:.2f} %\n")
+        elif model_type == "DNSR":
+            info.write(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %\n")
+            info.write(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %\n")
             info.write(f"Denoised bicubic\t\t{n_denoised_BI_detected / n_images * 100:.2f} %\n")
             info.write(f"Denoised HR\t\t{n_denoised_HR_detected / n_images * 100:.2f} %\n")
         else:

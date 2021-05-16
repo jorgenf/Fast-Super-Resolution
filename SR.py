@@ -145,8 +145,11 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
 
 
 def predict_model(model, image_dir, scale=2):
-    input_dim = model.layers[0].get_input_at(0).get_shape().as_list()[1]
-    LR = Image.open(image_dir)
+    input_dim = Model.get_model_dimension(model)
+    if isinstance(image_dir, str):
+        LR = Image.open(image_dir)
+    else:
+        LR = image_dir
     LR = LR.convert("L")
     w, h = LR.size
     LR = LR.crop((0, 0, min(w, h), min(w, h)))
