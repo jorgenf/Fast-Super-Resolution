@@ -17,6 +17,7 @@ import tensorflow as tf
 
 import SR
 import DN
+import Model
 
 """
 Inputs:
@@ -32,7 +33,8 @@ def evaluate_model_single_tag(
     model_type,
     eval_im_folder, eval_im_format, # path to folder of evaluation images and their format (.jpg, .png etc)
     eval_sample_frac=1.0, # fraction of images in "eval_im_folder" checked
-    ): 
+    second_model_name=None
+    ):
     
     # aruco parameters 
     ARUCO_DICT = aruco.DICT_6X6_250 
@@ -47,7 +49,14 @@ def evaluate_model_single_tag(
             print(f"No .{im_format} files in \"{INPUT_FRAMES_FOLDER}\"")
 
     # load model
-    model = SR.load_model(model_name)
+    if model_type == "SR" or model_type == "DN":
+        model = Model.load_model(model_name)
+        model2 = None
+    elif model_type == "SRDN":
+        model = Model.load_model(model_name)
+        model2 = Model.load_model(second_model_name)
+    else:
+        raise Exception("No valid model type chosen.")
 
     # count tags. assumes input is a greyscale image
     def find_tags(input_image, true_tag_id, input_im_name):
@@ -80,6 +89,8 @@ def evaluate_model_single_tag(
     n_images = 0
     n_denoised_detected = 0
     n_original_detected = 0
+    n_denoised_HR_detected = 0
+    n_denoised_BI_detected = 0
 
     # predict and evaluate images
     random.shuffle(evaluation_images)
@@ -101,6 +112,17 @@ def evaluate_model_single_tag(
             denoised, original = DN.predict_model(model, image_path)
             n_denoised_detected += find_tags(np.array(denoised), im_tag, im_name)
             n_original_detected += find_tags(np.array(original), im_tag, im_name)
+        elif model_type == "SRDN":
+            HR, LR, bicubic = SR.predict_model(model, image_path)
+            image = np.array(Image.open(image_path).convert("L"))
+            n_ground_truth_detected += find_tags(image, im_tag, im_name)
+            n_lr_detected += find_tags(np.array(LR), im_tag, im_name)
+            n_hr_detected += find_tags(np.array(HR), im_tag, im_name)
+            n_bicubic_detected += find_tags(np.array(bicubic), im_tag, im_name)
+            denoised_HR, original_HR = DN.predict_model(model2, HR)
+            denoised_BI, original_BI = DN.predict_model(model2, bicubic)
+            n_denoised_HR_detected += find_tags(np.array(denoised_HR), im_tag, im_name)
+            n_denoised_BI_detected += find_tags(np.array(denoised_BI), im_tag, im_name)
         else:
             raise Exception("No valid model type chosen.")
         # convert images to openCV format and detect markers
@@ -121,13 +143,32 @@ def evaluate_model_single_tag(
     elif model_type == "DN":
         print(f"Original\t\t{n_original_detected / n_images * 100:.2f} %")
         print(f"Denoised\t\t{n_denoised_detected / n_images * 100:.2f} %")
+    elif model_type == "SRDN":
+        print(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %")
+        print(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %")
+        print(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %")
+        print(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %")
+        print(f"Denoised bicubic\t\t{n_denoised_BI_detected / n_images * 100:.2f} %")
+        print(f"Denoised HR\t\t{n_denoised_HR_detected / n_images * 100:.2f} %")
     else:
         raise Exception("No valid model type chosen.")
     print("------------------------")
     print(f"Finished in {time.time() - start_t:.1f} s")
 
-
-    with open(model_name + "/assets/evaluation.txt", 'w') as info:
+    if model_type == "SR" or model_type == "DN":
+        directory = model_name + "/assets/evaluation.txt"
+    elif model_type == "SRDN":
+        n1 = os.path.basename(os.path.normpath(model_name))
+        n2 = os.path.basename(os.path.normpath(second_model_name))
+        path = "saved_models/SRDN/" + n1 + "_" + n2
+        try:
+            os.mkdir(path)
+            directory = path + "/summary.txt"
+        except:
+            raise Exception(f"Failed to create directory \"{dir}\" ")
+    else:
+        raise Exception("No valid model type chosen.")
+    with open(directory, 'w') as info:
         info.write(f"Evaluated {n_images} images\n")
         info.write("Detection rates:\n")
         info.write("------------------------\n")
@@ -139,6 +180,13 @@ def evaluate_model_single_tag(
         elif model_type == "DN":
             info.write(f"Original\t\t{n_original_detected / n_images * 100:.2f} %\n")
             info.write(f"Denoised\t\t{n_denoised_detected / n_images * 100:.2f} %\n")
+        elif model_type == "SRDN":
+            info.write(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %\n")
+            info.write(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %\n")
+            info.write(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %\n")
+            info.write(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %\n")
+            info.write(f"Denoised bicubic\t\t{n_denoised_BI_detected / n_images * 100:.2f} %\n")
+            info.write(f"Denoised HR\t\t{n_denoised_HR_detected / n_images * 100:.2f} %\n")
         else:
             raise Exception("No valid model type chosen.")
         info.write("------------------------\n")

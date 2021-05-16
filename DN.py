@@ -105,12 +105,12 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     model_name = f"{dim}_{model_alias}"
     return model, model_name
 
-def load_model(dir):
-    return keras.models.load_model(dir)
-
 def predict_model(model, image_dir):
-    input_dim = model.layers[0].get_input_at(0).get_shape().as_list()[1]
-    noisy = Image.open(image_dir)
+    input_dim = Model.get_model_dimension(model)
+    if isinstance(image_dir, str):
+        noisy = Image.open(image_dir)
+    else:
+        noisy = image_dir
     noisy = noisy.convert("L")
     noisy = noisy.crop((0, 0, input_dim, input_dim))
     x = tf.keras.preprocessing.image.img_to_array(noisy)
