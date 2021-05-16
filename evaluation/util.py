@@ -175,7 +175,6 @@ if __name__ == "__main__":
         eval_im_folder, 
         eval_im_format,
         eval_sample_frac=0.1,
-        verify_id=False
         )
 
 
