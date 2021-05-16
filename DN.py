@@ -15,7 +15,8 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
     x = input
     skip_values = []
     # Convolution layers
-    for i in range(8):
+    n_conv = 8 if dim == 256 else 7
+    for i in range(n_conv):
         num_filters = min(64 * pow(2, i), 512)
         conv = keras.layers.Conv2D(filters=num_filters, kernel_size=4, strides=2, padding="SAME")
         x = conv(x)
@@ -30,12 +31,13 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
             x = lrelu(x)
         else:
             raise Exception("No valid activation function chosen.")
-        if i < 7:
+        if i < n_conv - 1:
             skip_values.append(x)
 
     # Deconvolution layers
     num_filters = 512
-    for i in range(7):
+    n_deconv = n_conv - 1
+    for i in range(n_deconv):
         deconv = keras.layers.Conv2DTranspose(filters=num_filters, kernel_size=4, strides=2, padding="SAME")
         x = deconv(x)
         batch_norm_deconv = keras.layers.BatchNormalization()
@@ -48,13 +50,13 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
             x = lrelu(x)
         else:
             raise Exception("No valid activation function chosen.")
-        if i < 3:
+        if i < n_deconv - 4:
             dropout = keras.layers.Dropout(rate=0.5)
             x = dropout(x)
         else:
             num_filters /= 2
         concat = keras.layers.Concatenate(axis=3)
-        x = concat([x,skip_values[6-i]])
+        x = concat([x,skip_values[n_deconv-1-i]])
 
     output_layer = keras.layers.Conv2DTranspose(filters=1, kernel_size=4, strides=2, activation=keras.activations.tanh, padding="SAME")
     output = output_layer(x)
