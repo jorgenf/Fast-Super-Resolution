@@ -6,8 +6,8 @@ import sys
 import os
 from pathlib import Path
 
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# sys.path.append("/home/wehak/code/ACIT4630_SemesterProject")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+sys.path.append("/home/wehak/code/ACIT4630_SemesterProject")
 
 import cv2
 import cv2.aruco as aruco
@@ -33,8 +33,9 @@ def evaluate_model_single_tag(
     model_type,
     eval_im_folder, eval_im_format, # path to folder of evaluation images and their format (.jpg, .png etc)
     eval_sample_frac=1.0, # fraction of images in "eval_im_folder" checked
-    second_model_name=None
-    ):
+    second_model_name=None,
+    verify_id = False
+    ): 
     
     # aruco parameters 
     ARUCO_DICT = aruco.DICT_6X6_250 
@@ -46,7 +47,7 @@ def evaluate_model_single_tag(
     for im_format in eval_im_format:
         evaluation_images += glob.glob(f"{eval_im_folder}/*.{im_format}")
         if len(evaluation_images) == 0:
-            print(f"No .{im_format} files in \"{INPUT_FRAMES_FOLDER}\"")
+            print(f"No .{im_format} files in \"{eval_im_folder}\"")
 
     # load model
     if model_type == "SR" or model_type == "DN":
@@ -66,12 +67,14 @@ def evaluate_model_single_tag(
         
         # count the number of correct tags identified:
         if ids is not None:
-            if len(ids) == 1:
+            if (len(ids) == 1) and verify_id:
                 if ids[0][0] == true_tag_id:
                     return 1
                 else:
                     print(f"Warning: {input_im_name} wrongly identified ID {true_tag_id} as a {ids[0][0]}")
                     return 0
+            elif len(ids) == 1:
+                return 1
             elif len(ids) > 1:
                 print(f"Warning: {input_im_name} identified more than 1 one ID: {len(ids)}")
                 return 0
@@ -97,7 +100,11 @@ def evaluate_model_single_tag(
     start_t = time.time()
     for image_path in tqdm(evaluation_images[:int(eval_sample_frac * len(evaluation_images))]):
         # find tag id
-        im_tag = int(image_path[image_path.rfind("_")+1 : image_path.rfind(".")])
+        if verify_id:
+            im_tag = int(image_path[image_path.rfind("_")+1 : image_path.rfind(".")])
+        else:
+            im_tag = 0
+
         im_name = Path(image_path).name
 
         # for image_path in evaluation_images:
@@ -156,7 +163,7 @@ def evaluate_model_single_tag(
     print(f"Finished in {time.time() - start_t:.1f} s")
 
     if model_type == "SR" or model_type == "DN":
-        directory = model_name + "/assets/evaluation.txt"
+        directory = Path(f"{model_name}/assets/evaluation.txt")
     elif model_type == "SRDN":
         n1 = os.path.basename(os.path.normpath(model_name))
         n2 = os.path.basename(os.path.normpath(second_model_name))
@@ -203,17 +210,19 @@ if __name__ == "__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-    # example parameters
-    model_name = Path("saved_models/high_res")
-    model_input_size = 250
-    eval_im_folder = Path("evaluation_images/isolated_tags/charuco_CH1_35-15_500_png")
+    # example parameters 
+    model_name = Path("saved_models/SR/128_20210515-104132_Final") 
+    model_input_size = 128
+    eval_im_folder = Path("evaluation_images/isolated_tags/charuco_CH1_35-15_256_png") # with ID validation
+    # eval_im_folder = Path("evaluation_images/unrecognized_tags_256px-padding_png") # without ID validation
     eval_im_format = ("png", "jpg")
 
     # call evaluation function
     evaluate_model_single_tag(
         model_name, 
-        model_input_size, 
+        "SR", 
         eval_im_folder, 
         eval_im_format,
-        eval_sample_frac=1.0
+        eval_sample_frac=0.1,
+        verify_id=False
         )
