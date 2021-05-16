@@ -6,8 +6,8 @@ from tensorflow.keras import layers
 import datetime
 from PIL import Image
 import time
-
 import Data
+import Model
 
 
 def create_model(dim, n, d, s, m, activation="relu"):
@@ -89,20 +89,7 @@ def create_model(dim, n, d, s, m, activation="relu"):
     f_5 = 9
     n_5 = 1
     deconv1_9 = layers.Conv2DTranspose(filters=1, kernel_size=(f_5,f_5), strides=(n,n), padding="same", kernel_initializer=tf.initializers.random_normal(0.1))
-    x = deconv1_9(x)
-
-    if activation=="relu":
-        relu5 = keras.activations.relu
-        outputs = relu5(x)
-    elif activation=="lrelu":
-        lrelu5 = keras.layers.LeakyReLU(alpha=0.3)
-        outputs = lrelu5(x)
-    elif activation == "prelu":
-        prelu5 = layers.PReLU(alpha_initializer=tf.random_normal_initializer(0.1))
-        outputs = prelu5(x)
-    else:
-        raise Exception("No valid activation function chosen...")
-
+    outputs = deconv1_9(x)
 
     # Creates the model by assigning the input and output layer.
     model = keras.Model(inputs=inputs, outputs=outputs, name="FSRCNN")
@@ -120,24 +107,14 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
         model_alias = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     # Normalize data
-    X_train = data["X_train"] / 255
-    Y_train = data["Y_train"] / 255
-    X_test = data["X_test"] / 255
-    Y_test = data["Y_test"] / 255
+    X_train, Y_train, X_test, Y_test = Model.normalize_data(data)
 
     # infer image dimensions by size of array
-    dim = X_train[0].shape[0]
+    dim = Model.get_model_dimension(model)
 
+    # Creates directory
+    dir, log_dir = Model.create_model_directory(directory, "SR", dim, model_alias)
 
-    # Creates directory to save information
-    dir = f"{directory}/saved_models/SR/{dim}_{model_alias}"
-    try:
-        os.mkdir(dir)
-    except:
-        print(f"Failed to create directory \"{dir}\"")
-
-    # Creates directory for logs
-    log_dir = dir + "/logs/fit/"
 
     # Adds tensorboard
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -161,11 +138,7 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     model.save(dir + "/")
 
     # Saves info about model
-    with open(dir + "/assets/summary.txt", 'w') as info:
-        info.write("Training dataset: " + data["name"] + "\tsize: " + str(len(data["X_train"]) + len(data["X_test"])) + "\n")
-        info.write("Epochs: " + str(epochs) + "\tBatch size: " + str(batch_size) + "\n")
-        model.summary(print_fn=lambda x: info.write(x + '\n'))
-        info.close()
+    Model.save_model_info(dir, data, model, epochs, batch_size)
     model_name = f"{dim}_{model_alias}"
     return model, model_name
 
@@ -181,14 +154,10 @@ def predict_model(model, image_dir, scale=2):
     w, h = LR.size
     LR = LR.crop((0, 0, min(w, h), min(w, h)))
     LR = LR.resize((input_dim, input_dim), resample=Image.BICUBIC)
-
     x = tf.keras.preprocessing.image.img_to_array(LR)
     x = x / 255
     x = tf.reshape(x, (1, input_dim, input_dim,))
-    start = time.time()
     y = model.predict(x)
-    stop = time.time()
-    # print("Elapsed time: " + str(stop-start))
     y = tf.reshape(y, (input_dim * scale, input_dim * scale, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
     bicubic = LR.resize((input_dim * scale, input_dim * scale), resample=Image.BICUBIC)

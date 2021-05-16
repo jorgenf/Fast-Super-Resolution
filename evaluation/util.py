@@ -16,6 +16,7 @@ from tqdm import tqdm
 import tensorflow as tf
 
 import SR
+import DN
 
 """
 Inputs:
@@ -28,8 +29,9 @@ Outputs:
 """
 def evaluate_model_single_tag(
     model_name, # model name and input size
+    model_type,
     eval_im_folder, eval_im_format, # path to folder of evaluation images and their format (.jpg, .png etc)
-    eval_sample_frac=1.0 # fraction of images in "eval_im_folder" checked
+    eval_sample_frac=1.0, # fraction of images in "eval_im_folder" checked
     ): 
     
     # aruco parameters 
@@ -76,6 +78,8 @@ def evaluate_model_single_tag(
     n_hr_detected = 0
     n_bicubic_detected = 0
     n_images = 0
+    n_denoised_detected = 0
+    n_original_detected = 0
 
     # predict and evaluate images
     random.shuffle(evaluation_images)
@@ -86,15 +90,21 @@ def evaluate_model_single_tag(
         im_name = Path(image_path).name
 
         # for image_path in evaluation_images:
-        HR, LR, bicubic = SR.predict_model(model, image_path)
-
+        if model_type == "SR":
+            HR, LR, bicubic = SR.predict_model(model, image_path)
+            image = np.array(Image.open(image_path).convert("L"))
+            n_ground_truth_detected += find_tags(image, im_tag, im_name)
+            n_lr_detected += find_tags(np.array(LR), im_tag, im_name)
+            n_hr_detected += find_tags(np.array(HR), im_tag, im_name)
+            n_bicubic_detected += find_tags(np.array(bicubic), im_tag, im_name)
+        elif model_type == "DN":
+            denoised, original = DN.predict_model(model, image_path)
+            n_denoised_detected += find_tags(np.array(denoised), im_tag, im_name)
+            n_original_detected += find_tags(np.array(original), im_tag, im_name)
+        else:
+            raise Exception("No valid model type chosen.")
         # convert images to openCV format and detect markers
         # image = cv2.imread(image_path, 0)
-        image = np.array(Image.open(image_path).convert("L"))
-        n_ground_truth_detected += find_tags(image, im_tag, im_name)
-        n_lr_detected += find_tags(np.array(LR), im_tag, im_name)
-        n_hr_detected += find_tags(np.array(HR), im_tag, im_name)
-        n_bicubic_detected += find_tags(np.array(bicubic), im_tag, im_name)
 
         n_images += 1
 
@@ -103,10 +113,16 @@ def evaluate_model_single_tag(
     print(f"\nEvaluated {n_images} images")
     print("Detection rates:")
     print("------------------------")
-    print(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %")
-    print(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %")
-    print(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %")
-    print(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %")
+    if model_type == "SR":
+        print(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %")
+        print(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %")
+        print(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %")
+        print(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %")
+    elif model_type == "DN":
+        print(f"Original\t\t{n_original_detected / n_images * 100:.2f} %")
+        print(f"Denoised\t\t{n_denoised_detected / n_images * 100:.2f} %")
+    else:
+        raise Exception("No valid model type chosen.")
     print("------------------------")
     print(f"Finished in {time.time() - start_t:.1f} s")
 
@@ -115,10 +131,16 @@ def evaluate_model_single_tag(
         info.write(f"Evaluated {n_images} images\n")
         info.write("Detection rates:\n")
         info.write("------------------------\n")
-        info.write(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %\n")
-        info.write(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %\n")
-        info.write(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %\n")
-        info.write(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %\n")
+        if model_type == "SR":
+            info.write(f"Ground truth\t{n_ground_truth_detected / n_images * 100:.2f} %\n")
+            info.write(f"LR\t\t{n_lr_detected / n_images * 100:.2f} %\n")
+            info.write(f"HR\t\t{n_hr_detected / n_images * 100:.2f} %\n")
+            info.write(f"Bicubic\t\t{n_bicubic_detected / n_images * 100:.2f} %\n")
+        elif model_type == "DN":
+            info.write(f"Original\t\t{n_original_detected / n_images * 100:.2f} %\n")
+            info.write(f"Denoised\t\t{n_denoised_detected / n_images * 100:.2f} %\n")
+        else:
+            raise Exception("No valid model type chosen.")
         info.write("------------------------\n")
         info.write(f"Finished in {time.time() - start_t:.1f} s\n")
         info.close()
