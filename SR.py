@@ -6,16 +6,14 @@ from tensorflow.keras import layers
 import datetime
 from PIL import Image
 import time
-import Data
-import Model
+import Model_util
 
-
+# Creates and returns the model based of specified parameters.
 def create_model(dim, n, d, s, m, activation="relu"):
     # Input layer. Takes the image shape and one channel for greyscale images.
     inputs = keras.Input(shape=(dim,dim,1,))
 
     # The convolutional layers of the model. Keeps size of feature maps constant with same padding.
-
     # Feature extraction
     f_1 = 5
     n_1 = d
@@ -93,27 +91,26 @@ def create_model(dim, n, d, s, m, activation="relu"):
 
     # Creates the model by assigning the input and output layer.
     model = keras.Model(inputs=inputs, outputs=outputs, name="FSRCNN")
-    # Gives model information. Second line outputs diagram.
+    # Returns model information.
     model.summary()
-    #keras.utils.plot_model(model, "my_first_model.png")
 
     # Compiles model with selected features.
     model.compile(loss=keras.losses.mean_squared_error, optimizer=keras.optimizers.Adam(), metrics=["mean_squared_error"])
-
     return model
 
+# Traines the model based on specified parameters.
 def train_model(model, data, epochs, batch_size, directory=".", model_alias=None):
     if model_alias is None:
         model_alias = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     # Normalize data
-    X_train, Y_train, X_test, Y_test = Model.normalize_data(data)
+    X_train, Y_train, X_test, Y_test = Model_util.normalize_data(data)
 
-    # infer image dimensions by size of array
-    dim = Model.get_model_dimension(model)
+    # Infer image dimensions by initial layer.
+    dim = Model_util.get_model_dimension(model)
 
     # Creates directory
-    dir, log_dir = Model.create_model_directory(directory, "SR", dim, model_alias)
+    dir, log_dir = Model_util.create_model_directory(directory, "SR", dim, model_alias)
 
 
     # Adds tensorboard
@@ -134,18 +131,17 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     print("Test accuracy:", test_scores[1])
 
     # Saved model in separate directory
-
     model.save(dir + "/")
 
     # Saves info about model
-    Model.save_model_info(dir, data, model, epochs, batch_size)
+    Model_util.save_model_info(dir, data, model, epochs, batch_size)
     model_name = f"{dim}_{model_alias}"
     return model, model_name
 
-
-
+# Makes prediction using model.
 def predict_model(model, image_dir, scale=2):
-    input_dim = Model.get_model_dimension(model)
+    input_dim = Model_util.get_model_dimension(model)
+    # Allows the model to take both a directory string and an image as input.
     if isinstance(image_dir, str):
         LR = Image.open(image_dir)
     else:
@@ -161,7 +157,6 @@ def predict_model(model, image_dir, scale=2):
     y = tf.reshape(y, (input_dim * scale, input_dim * scale, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
     bicubic = LR.resize((input_dim * scale, input_dim * scale), resample=Image.BICUBIC)
-    
     return HR, LR, bicubic
 
 
@@ -187,7 +182,6 @@ def predict(model, image_dir, scale=2):
     # print("Elapsed time: " + str(stop-start))
     y = tf.reshape(y, (input_dim * scale, input_dim * scale, 1)) * 255
     HR = tf.keras.preprocessing.image.array_to_img(y)
-    
     return HR
 
 

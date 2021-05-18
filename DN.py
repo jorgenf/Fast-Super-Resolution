@@ -2,20 +2,20 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
 import datetime
 from PIL import Image
-import time
-import Model
+import Model_util
 from Loss import getL1SSIM, getL1, getSSIM
 
+# Creates and returns model based on specified parameters.
 def create_model(dim, activation="relu", loss="L1SSIM"):
-
     input = keras.Input(shape=(dim, dim, 1,))
     x = input
     skip_values = []
-    # Convolution layers
+
+    # Removes one conv layer if input size is not 256, meaning that it is 128.
     n_conv = 8 if dim == 256 else 7
+    # Creates the convolution layers
     for i in range(n_conv):
         num_filters = min(64 * pow(2, i), 512)
         conv = keras.layers.Conv2D(filters=num_filters, kernel_size=4, strides=2, padding="SAME")
@@ -34,7 +34,7 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
         if i < n_conv - 1:
             skip_values.append(x)
 
-    # Deconvolution layers
+    # Creates the deconvolution layers
     num_filters = 512
     n_deconv = n_conv - 1
     for i in range(n_deconv):
@@ -72,18 +72,19 @@ def create_model(dim, activation="relu", loss="L1SSIM"):
     model.summary()
     return model
 
+# Traines the model based on specified parameters.
 def train_model(model, data, epochs, batch_size, directory=".", model_alias=None):
     if model_alias is None:
         model_alias = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     # Normalize data
-    X_train, Y_train, X_test, Y_test = Model.normalize_data(data)
+    X_train, Y_train, X_test, Y_test = Model_util.normalize_data(data)
 
     # Get input dimensions
-    dim = Model.get_model_dimension(model)
+    dim = Model_util.get_model_dimension(model)
 
     # Creates Directory
-    dir, log_dir = Model.create_model_directory(directory, "DN", dim, model_alias)
+    dir, log_dir = Model_util.create_model_directory(directory, "DN", dim, model_alias)
 
     # Trains the model.
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -103,12 +104,13 @@ def train_model(model, data, epochs, batch_size, directory=".", model_alias=None
     model.save(dir + "/")
 
     # Saves info about model
-    Model.save_model_info(dir, data, model, epochs, batch_size)
+    Model_util.save_model_info(dir, data, model, epochs, batch_size)
     model_name = f"{dim}_{model_alias}"
     return model, model_name
 
+# Makes prediction with model.
 def predict_model(model, image_dir):
-    input_dim = Model.get_model_dimension(model)
+    input_dim = Model_util.get_model_dimension(model)
     if isinstance(image_dir, str):
         noisy = Image.open(image_dir)
     else:
@@ -121,7 +123,6 @@ def predict_model(model, image_dir):
     y = model.predict(x)
     y = tf.reshape(y, (input_dim, input_dim, 1)) * 255
     denoised = tf.keras.preprocessing.image.array_to_img(y)
-
     return denoised, noisy
 
 def predict(model, image_dir):
