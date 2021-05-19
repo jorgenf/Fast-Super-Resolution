@@ -17,10 +17,11 @@ Output is images of spesified size
 """
 
 # settings
-INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH1_35-15.mp4")
-OUTPUT_FRAMES = Path("evaluation_images/valid_tags") # save frame if any tag is detected
-SAVE_FRAME_EVERY_N_SECONDS = 1 # decimals for multiple saves per second
-OUTPUT_HEIGHT = None # size of output image, None to use natural size
+INPUT_VIDEO = Path("/home/wehak/Videos/grip_hover.mp4")
+# INPUT_VIDEO = Path("/home/wehak/Videos/charuco_CH1_35-15.mp4")
+OUTPUT_FRAMES = Path("evaluation_images/final_test_datasets/single_image") # save frame if any tag is detected
+SAVE_FRAME_EVERY_N_SECONDS = 0.5 # decimals for multiple saves per second
+OUTPUT_HEIGHT = 128 # size of output image, None to use natural size
 IMAGE_FORMAT = "png"
 TAG_PADDING = .3 # percentage size of tag added as padding
 ASPECT_RATIO_DEVIATION = 0.7 # percentage similarity of a 1:1 ratio. images outside of threshhold is rejected
@@ -151,7 +152,7 @@ while(True):
                             bottom_pad,
                             0,
                             0,
-                            cv2.BORDER_CONSTANT)
+                            cv2.BORDER_REPLICATE)
 
                     # add horizontal padding if cropped image is smaller than desired output image size
                     if tag_im.shape[1] < OUTPUT_HEIGHT:
@@ -166,18 +167,12 @@ while(True):
                             0,
                             left_pad,
                             right_pad,
-                            cv2.BORDER_CONSTANT)
+                            cv2.BORDER_REPLICATE)
                     
                 # save image                
-                name = Path(f"{folder_name}/{round(frame_count // fps)}-{round(frame_count % fps)}_{ids[i][0]}.{IMAGE_FORMAT}")
+                name = Path(f"{folder_name}/{round(frame_count // fps)}-{round(frame_count % fps)}-id_{ids[i][0]}.{IMAGE_FORMAT}")
                 cv2.imwrite(str(name), tag_im)
                 n_saved += 1
-                # print(f"Created {name} of size {tag_im.shape[0]}x{tag_im.shape[1]}")
-
-                # draw rectangle and ID on frame    
-                # DO NOT USE other than for debugging. will create drawings on output images
-                # cv2.putText(frame, f"id: {ids[i][0]}", top_left, font, 1, (0,0,255), 1, cv2.LINE_AA)
-                # frame = cv2.rectangle(frame, top_left, bottom_right, (255,111,255), 1)
     
     # draw detected aruco tags
     frame = aruco.drawDetectedMarkers(frame, corners, ids=ids)
@@ -191,7 +186,7 @@ while(True):
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-    # while loop cleanup
+    # per frame cleanup
     frame_count += 1
 
 
